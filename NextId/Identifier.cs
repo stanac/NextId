@@ -8,9 +8,11 @@ namespace NextId;
 /// Where prefix is user defined, timeComponent is current time for new values (if not specified otherwise).
 /// First and only version at the moment is 0.
 /// </summary>
-public abstract class Identifier : IEquatable<Identifier>
+public abstract class Identifier<TSelf> : IEquatable<TSelf>
+    where TSelf : Identifier<TSelf>
 {
     private const string CurrentVersion = "0";
+    // ReSharper disable once StaticMemberInGenericType
     private static readonly ThreadSafeRandom _rand = new();
     
     /// <summary>
@@ -60,6 +62,8 @@ public abstract class Identifier : IEquatable<Identifier>
         // ReSharper restore VirtualMemberCallInConstructor
     }
 
+    #region Implementation methods
+    
     private string Generate(DateTimeOffset time)
     {
         ValidateSaltAndPrefix(Salt, Prefix);
@@ -101,25 +105,6 @@ public abstract class Identifier : IEquatable<Identifier>
         }
     }
 
-    public bool Equals(Identifier? other)
-    {
-        if (ReferenceEquals(null, other)) return false;
-        if (ReferenceEquals(this, other)) return true;
-        return Value == other.Value;
-    }
-
-    public override bool Equals(object? obj)
-    {
-        if (ReferenceEquals(null, obj)) return false;
-        if (ReferenceEquals(this, obj)) return true;
-        if (obj.GetType() != this.GetType()) return false;
-        return Equals((Identifier)obj);
-    }
-
-    public override int GetHashCode() => Value.GetHashCode();
-
-    public override string ToString() => Value;
-    
     private static void ThrowFormatException(string comment = "")
     {
         string error = "Format not valid: " + comment;
@@ -148,4 +133,69 @@ public abstract class Identifier : IEquatable<Identifier>
             throw new InvalidOperationException("Prefix can contain only ASCII letters and digits.");
         }
     }
+
+    #endregion Implementation methods
+
+    #region Equals and overrides
+
+    /// <summary>
+    /// Are values equal
+    /// </summary>
+    /// <param name="other">other object</param>
+    /// <returns>True if other object is of the same type and value</returns>
+    public bool Equals(TSelf? other)
+    {
+        if (ReferenceEquals(null, other)) return false;
+        if (ReferenceEquals(this, other)) return true;
+        return Value == other.Value;
+    }
+
+    /// <summary>
+    /// Are values equal
+    /// </summary>
+    /// <param name="obj">other object</param>
+    /// <returns>True if other object is of the same type and value</returns>
+    public override bool Equals(object? obj)
+    {
+        if (ReferenceEquals(null, obj)) return false;
+        if (ReferenceEquals(this, obj)) return true;
+        if (obj.GetType() != this.GetType()) return false;
+        return Equals((TSelf)obj);
+    }
+
+    /// <summary>
+    /// Returns hash code of Identifier
+    /// </summary>
+    /// <returns>Integer hash code</returns>
+    public override int GetHashCode() => HashCode.Combine(Prefix, Value); // prefix first to differ this hash code from string hash code
+
+    /// <summary>
+    /// Are two identifiers equal
+    /// </summary>
+    /// <param name="id1">Identifier</param>
+    /// <param name="id2">Identifier</param>
+    /// <returns>True if identifiers are equal</returns>
+    public static bool operator ==(Identifier<TSelf>? id1, Identifier<TSelf>? id2)
+    {
+        if (id1 is null && id2 is null) return true;
+        if (id1 is null || id2 is null) return false;
+
+        return id1.Value == id2.Value;
+    }
+
+    /// <summary>
+    /// Are two identifiers different
+    /// </summary>
+    /// <param name="id1">Identifier</param>
+    /// <param name="id2">Identifier</param>
+    /// <returns>True if identifiers are different</returns>
+    public static bool operator !=(Identifier<TSelf>? id1, Identifier<TSelf>? id2) => !(id1 == id2);
+
+    /// <summary>
+    /// Converts identifier to string value
+    /// </summary>
+    /// <returns>String value that can be parsed</returns>
+    public override string ToString() => Value;
+
+    #endregion Equals and overrides
 }

@@ -1,15 +1,10 @@
 ﻿namespace NextId.Tests;
 
-public class UserId : Identifier
+public class UserId : Identifier<UserId>
 {
-    /// <summary>
-    /// Identifier prefix
-    /// </summary>
     protected override string Prefix => "user";
 
-    /// <summary>
-    /// Salt for checksum hash
-    /// </summary>
+    // Salt for checksum hash
     protected override string Salt => "99AAB45utg";
 
     // default constructor, generates new id
@@ -28,8 +23,19 @@ public class UserId : Identifier
     public static UserId NewId() => new();
 
     public static UserId Parse(string value) => new(value);
-
-    // you can add TryParse if you need it
-
-
+    
+    public static bool TryParse(string value, out UserId? result)
+    {
+        try
+        {
+            result = Parse(value);
+            return true;
+        }
+        catch
+        {
+            result = null;
+            return false;
+        }
+    }
+    
 }
