@@ -9,6 +9,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NextId.Tests", "NextId.Test
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NextId.Performance", "NextId.Performance\NextId.Performance.csproj", "{BC205E06-ADAD-4088-A812-3D3E1CAEA52A}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NextId.Serialization.Json", "NextId.Serialization.Json\NextId.Serialization.Json.csproj", "{ADE96CE7-584B-4EAD-BAAF-37F76FAD8F6D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NextId.Serialization.Json.Tests", "NextId.Serialization.Json.Tests\NextId.Serialization.Json.Tests.csproj", "{1E7886CF-0D3D-465E-8DDB-6711E85F5CE6}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +31,14 @@ Global
 		{BC205E06-ADAD-4088-A812-3D3E1CAEA52A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BC205E06-ADAD-4088-A812-3D3E1CAEA52A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BC205E06-ADAD-4088-A812-3D3E1CAEA52A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{ADE96CE7-584B-4EAD-BAAF-37F76FAD8F6D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{ADE96CE7-584B-4EAD-BAAF-37F76FAD8F6D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{ADE96CE7-584B-4EAD-BAAF-37F76FAD8F6D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{ADE96CE7-584B-4EAD-BAAF-37F76FAD8F6D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1E7886CF-0D3D-465E-8DDB-6711E85F5CE6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1E7886CF-0D3D-465E-8DDB-6711E85F5CE6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1E7886CF-0D3D-465E-8DDB-6711E85F5CE6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1E7886CF-0D3D-465E-8DDB-6711E85F5CE6}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
