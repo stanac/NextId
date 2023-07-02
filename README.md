@@ -1,5 +1,5 @@
 # NextId
-Strongly-typed, K-Sortable identifier with checksum
+Strongly-typed, K-Sortable globally unique identifier with checksum
 
 ---
 
@@ -13,11 +13,11 @@ user-4B4XH7BnCp68CCY8mzVbNT5X
 - Left from `-` is type (max 11 characters)
 - Right from `-` is id value  
 
-id is generated from:
-  - First 8 chars is Unix timestamp in milliseconds
-  - Next 2 chars are microseconds of the timestamp
-  - Next 11 chars are random
-  - Final 3 chars are checksum
+id is componsed of:
+  - First 8 chars, Unix timestamp in milliseconds
+  - Next 2 chars, microseconds of the timestamp
+  - Next 11 chars, random value
+  - Final 3 chars, checksum value
 
 Checksum can be used to validate id before going to database for malicious or 
 unexpected activities by clients.
