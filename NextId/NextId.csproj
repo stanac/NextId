@@ -1,9 +1,22 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFramework>net7.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-  </PropertyGroup>
+	<PropertyGroup>
+		<TargetFramework>net7.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
 
+		<Version>1.0.0</Version>
+		<IncludeSymbols>true</IncludeSymbols>
+		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
+
+		<PackageProjectUrl>https://github.com/stanac/NextId</PackageProjectUrl>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+
+		<RepositoryUrl>$(PackageProjectUrl).git</RepositoryUrl>
+		<RepositoryType>git</RepositoryType>
+
+		<Description>.NET libary for generating strongly-typed K-sortable identifiers with checksum</Description>
+		<Summary>.NET libary for generating strongly-typed K-sortable identifiers with checksum</Summary>
+
+	</PropertyGroup>
 </Project>
