@@ -1,19 +1,22 @@
-﻿using System.Security.Cryptography;
+﻿using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Security.Cryptography;
 using System.Text;
 
 namespace NextId;
 
 /// <summary>
-/// Abstract class for strongly-typed, K-Sortable Id with checksum in format: {prefix}-{timeComponent}-{version}-{randomComponent}-{checksum}.
-/// Where prefix is user defined, timeComponent is current time for new values (if not specified otherwise).
-/// First and only version at the moment is 0.
+/// Abstract class for strongly-typed, K-Sortable Id with Checksum in format: {prefix}-{TimeComponent}{RandomComponent}{Checksum}.
+/// TimeComponent is 10 characters, RandomComponent is 11 characters and Checksum is 2 characters.
+/// Prefix is user defined. TimeComponent is current time for new values (if not specified otherwise).
 /// </summary>
 public abstract class Identifier<TSelf> : IEquatable<TSelf>
     where TSelf : Identifier<TSelf>
 {
-    private const string CurrentVersion = "0";
-    // ReSharper disable once StaticMemberInGenericType
+    // ReSharper disable StaticMemberInGenericType
     private static readonly ThreadSafeRandom _rand = new();
+    private static readonly DateTimeOffset _minTime = new(new DateTime(1995, 1, 1));
+    private const int ChecksumLength = 3;
     
     /// <summary>
     /// Value to use as prefix for Id, only ASCII letters and digits allowed. Less than 12 characters in length.
@@ -31,6 +34,11 @@ public abstract class Identifier<TSelf> : IEquatable<TSelf>
     public string Value { get; }
 
     /// <summary>
+    /// Time component of the id
+    /// </summary>
+    public DateTimeOffset TimeComponent { get; }
+
+    /// <summary>
     /// Constructor for generating new values
     /// </summary>
     protected Identifier()
@@ -45,6 +53,7 @@ public abstract class Identifier<TSelf> : IEquatable<TSelf>
     protected Identifier(DateTimeOffset time)
     {
         Value = Generate(time);
+        TimeComponent = time;
     }
 
     /// <summary>
@@ -58,68 +67,108 @@ public abstract class Identifier<TSelf> : IEquatable<TSelf>
         Value = value;
 
         // ReSharper disable VirtualMemberCallInConstructor
-        Validate(Value, Prefix, Salt);
+        EnsureValid(Value, Prefix, Salt);
         // ReSharper restore VirtualMemberCallInConstructor
+
+        if (IsTimeComponentValid(Value, out DateTimeOffset? td))
+        {
+            TimeComponent = td.Value;
+        }
+        else
+        {
+            // EnsureValid should throw if time component is not valid
+            throw new UnreachableException();
+        }
     }
 
     #region Implementation methods
     
     private string Generate(DateTimeOffset time)
     {
+        if (time < _minTime)
+        {
+            throw new ArgumentException("Time cannot be before year 1995");
+        }
+
+        // {prefix}-{TimeComponent}{RandomComponent}{Checksum}
+
         ValidateSaltAndPrefix(Salt, Prefix);
 
-        string timeValue = Base55.ToString(time.ToUnixTimeMilliseconds());
-        string random = Base55.ToString(_rand.NextInt64(), 11) + Base55.ToString(_rand.NextInt64(), 11);
+        string timeValue = Base50.ToString(time.ToUnixTimeMilliseconds()) + Base50.ToString(time.Microsecond, 2);
+        string random = Base50.ToString(_rand.NextInt64(), 11);
 
-        string value = $"{Prefix}-{timeValue}-{CurrentVersion}-{random}";
-
-        string checksum = Hash(value + Salt);
-
-        return $"{value}-{checksum}";
-    }
-    
-    private static void Validate(string value, string prefix, string salt)
-    {
-        ValidateSaltAndPrefix(salt, prefix);
-
-        if (value.Length > 100)
-        {
-            throw new ArgumentException("Value too large", nameof(value));
-        }
+        if (random.Length > 11) random = random.Substring(1, 11);
         
-        if (!value.StartsWith(prefix + "-")) throw new ArgumentException("Prefix doesn't match.", nameof(prefix));
+        string value = $"{Prefix}-{timeValue}{random}";
 
-        string[] parts = value.Split("-");
+        string checksum = Hash(value, Salt);
 
-        if (parts.Length != 5 || parts[2] != CurrentVersion)
+        return $"{value}{checksum}";
+    }
+
+    protected static bool IsValid(string value, string prefix, string salt)
+    {
+        if (string.IsNullOrWhiteSpace(value)) return false;
+        if (value.Length > 40) return false;
+
+        if (value.Count(c => c == '-') != 1) return false;
+
+        if (!value.StartsWith(prefix + "-")) return false;
+
+        string checksum = value.Substring(value.Length - ChecksumLength);
+        string valueWithoutChecksum = value.Substring(0, value.Length - ChecksumLength);
+
+        string secondPart = value.Split('-')[1];
+
+        if (secondPart.Length != 24)
         {
-            ThrowFormatException();
+            return false;
         }
+
+        if (checksum != Hash(valueWithoutChecksum, salt)) return false;
         
-        string valueWithoutChecksum = string.Join("-", parts.Take(4));
-        string newChecksum = Hash(valueWithoutChecksum + salt);
-
-        if (newChecksum != parts[4])
+        if (!IsTimeComponentValid(value, out _))
         {
-            ThrowFormatException();
+            return false;
+        }
+
+        return true;
+    }
+
+    private static void EnsureValid(string value, string prefix, string salt)
+    {
+        if (!IsValid(value, prefix, salt))
+        {
+            throw new FormatException("Wrong format for identifier");
         }
     }
 
-    private static void ThrowFormatException(string comment = "")
+    private static bool IsTimeComponentValid(string value, [NotNullWhen(true)]out DateTimeOffset? timeComponent)
     {
-        string error = "Format not valid: " + comment;
-        error = error.TrimEnd().TrimEnd(':').TrimEnd('.') + ".";
-        throw new FormatException(error);
+        string timePart = value.Split('-')[1].Substring(10);
+        string milliseconds = timePart.Substring(0, 8);
+        string microseconds = timePart.Substring(8);
+
+        DateTimeOffset dt = DateTimeOffset.FromUnixTimeMilliseconds(Base50.ToLong(milliseconds));
+        timeComponent = dt.AddMicroseconds(Base50.ToLong(microseconds));
+
+        if (timeComponent < _minTime)
+        {
+            timeComponent = null;
+            return false;
+        }
+
+        return true;
     }
 
-    private static string Hash(string input)
+    private static string Hash(string input, string salt)
     {
-        byte[] inputBytes = Encoding.UTF8.GetBytes(input);
+        byte[] inputBytes = Encoding.UTF8.GetBytes(input + salt);
         byte[] hash = SHA256.HashData(inputBytes);
         long hashValue = Math.Abs(BitConverter.ToInt64(hash));
-        string hashString = Base55.ToString(hashValue);
+        string hashString = Base50.ToString(hashValue);
 
-        return hashString.Substring(hashString.Length - 3);
+        return hashString.Substring(hashString.Length - ChecksumLength);
     }
 
     // ReSharper disable once ParameterOnlyUsedForPreconditionCheck.Local

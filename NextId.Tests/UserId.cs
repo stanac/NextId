@@ -2,10 +2,13 @@
 
 public class UserId : Identifier<UserId>
 {
-    protected override string Prefix => "user";
+    private const string PrefixConst = "user";
+    private const string SaltConst = "99AAB45utg";
+
+    protected override string Prefix => PrefixConst;
 
     // Salt for checksum hash
-    protected override string Salt => "99AAB45utg";
+    protected override string Salt => SaltConst;
 
     // default constructor, generates new id
     public UserId()
@@ -23,6 +26,8 @@ public class UserId : Identifier<UserId>
     public static UserId NewId() => new();
 
     public static UserId Parse(string value) => new(value);
+
+    public static bool IsValid(string value) => IsValid(value, PrefixConst, SaltConst);
     
     public static bool TryParse(string value, out UserId? result)
     {

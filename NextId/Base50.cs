@@ -1,8 +1,8 @@
 ﻿namespace NextId;
 
-internal static class Base55
+internal static class Base50
 {
-    public const string Charset = "23456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz";
+    public const string Charset = "23456789BCDFGHJKLMNPQRSTVWXYZabcdfghjkmnpqrstvwxyz";
 
     public static string ToString(long value, int pad = 0)
     {
