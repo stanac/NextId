@@ -76,4 +76,4 @@ Prefix will be set as identifier prefix (`user` in this case).
 Value must have less than 12 characters and can contain only ASCII letters and digits.
 
 Salt must be less than 33 characters and should be set to random value to each type.
-Once set, it must not be chaged.
+Once set, it must not be changed.
