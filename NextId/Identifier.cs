@@ -11,7 +11,7 @@ namespace NextId;
 /// Prefix is user defined. TimeComponent is current time for new values (if not specified otherwise).
 /// </summary>
 public abstract class Identifier<TSelf> : IEquatable<TSelf>
-    where TSelf : Identifier<TSelf>
+    where TSelf : Identifier<TSelf>, IParsable<TSelf>
 {
     // ReSharper disable StaticMemberInGenericType
     private static readonly ThreadSafeRandom _rand = new();
@@ -198,7 +198,7 @@ public abstract class Identifier<TSelf> : IEquatable<TSelf>
         if (ReferenceEquals(this, other)) return true;
         return Value == other.Value;
     }
-
+    
     /// <summary>
     /// Are values equal
     /// </summary>

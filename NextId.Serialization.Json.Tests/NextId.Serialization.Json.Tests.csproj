@@ -25,6 +25,7 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\NextId.Serialization.Json\NextId.Serialization.Json.csproj" />
+		<ProjectReference Include="..\NextId.Tests\NextId.Tests.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>

@@ -1,6 +1,8 @@
-﻿namespace NextId.Tests;
+﻿using System.Diagnostics.CodeAnalysis;
 
-public class UserId : Identifier<UserId>
+namespace NextId.Tests;
+
+public class UserId : Identifier<UserId>, IParsable<UserId>
 {
     private const string PrefixConst = "user";
     private const string SaltConst = "99AAB45utg";
@@ -17,9 +19,23 @@ public class UserId : Identifier<UserId>
 
     public static UserId NewId() => new();
 
-    public static UserId Parse(string value) => new(value);
+    public static UserId Parse(string s) => Parse(s, null);
+
+    public static UserId Parse(string s, IFormatProvider? provider) => new(s);
+
+    public static bool TryParse(string? s, IFormatProvider? provider, [NotNullWhen(true)]out UserId? result)
+    {
+        try
+        {
+            result = Parse(s!, provider);
+            return true;
+        }
+        catch
+        {
+            result = null;
+            return false;
+        }
+    }
 
     public static bool IsValid(string value) => IsValid(value, PrefixConst, SaltConst);
-    
-    // you can add TryParse if needed
 }

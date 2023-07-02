@@ -15,7 +15,7 @@ public class UserIdTests
     public void Parse_ValidValue_ReturnsExpectedId()
     {
         string idValue = "user-4B4XH7BnCp68CCY8mzVbNT5X";
-        
+
         UserId id = UserId.Parse(idValue);
         id.Value.Should().Be(idValue);
         id.ToString().Should().Be(idValue);
