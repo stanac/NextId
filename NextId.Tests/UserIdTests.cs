@@ -43,6 +43,7 @@ public class UserIdTests
         Equals(id1, id2).Should().BeFalse();
 
         (id1 != id2).Should().BeTrue();
+        (id1 == id2).Should().BeFalse();
     }
 
     [Fact]
