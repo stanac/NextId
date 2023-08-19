@@ -1,5 +1,5 @@
 # NextId
-Strongly-typed, K-Sortable globally unique identifier with checksum
+Strongly-typed, K-Sortable globally unique identifier with checksum for .NET 7+.
 
 ---
 
