@@ -6,7 +6,7 @@
 		<Nullable>enable</Nullable>
 
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-		<Version>1.0.0</Version>
+		<Version>1.0.1</Version>
 		<IncludeSymbols>true</IncludeSymbols>
 		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
 
@@ -20,7 +20,7 @@
 		<Summary>.NET libary for generating strongly-typed K-sortable identifiers with checksum</Summary>
 		<Authors>stanac</Authors>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
-		<PackageTags>identifier;id;k-sortable</PackageTags>
+		<PackageTags>identifier;id;k-sortable;uuid</PackageTags>
 
 	</PropertyGroup>
 
