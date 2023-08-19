@@ -10,6 +10,9 @@ namespace NextId;
 /// TimeComponent is 10 characters, RandomComponent is 11 characters and Checksum is 2 characters.
 /// Prefix is user defined. TimeComponent is current time for new values (if not specified otherwise).
 /// </summary>
+#if DEBUG
+[DebuggerDisplay("{DebugValue}")]
+#endif
 public abstract class Identifier<TSelf> : IEquatable<TSelf>
     where TSelf : Identifier<TSelf>, IParsable<TSelf>
 {
@@ -17,7 +20,11 @@ public abstract class Identifier<TSelf> : IEquatable<TSelf>
     private static readonly ThreadSafeRandom _rand = new();
     private static readonly DateTimeOffset _minTime = new(new DateTime(1995, 1, 1));
     private const int ChecksumLength = 3;
-    
+
+#if DEBUG
+    internal string DebugValue { get; }
+#endif
+
     /// <summary>
     /// Value to use as prefix for Id, only ASCII letters and digits allowed. Less than 12 characters in length.
     /// </summary>
@@ -54,6 +61,10 @@ public abstract class Identifier<TSelf> : IEquatable<TSelf>
     {
         Value = Generate(time);
         TimeComponent = time;
+
+#if DEBUG
+        DebugValue = $"{GetType().Name}: {Value}";
+#endif
     }
 
     /// <summary>
@@ -247,4 +258,5 @@ public abstract class Identifier<TSelf> : IEquatable<TSelf>
     public override string ToString() => Value;
 
     #endregion Equals and overrides
+
 }
