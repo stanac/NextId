@@ -90,10 +90,14 @@ public abstract class Identifier<TSelf> : IEquatable<TSelf>
             // EnsureValid should throw if time component is not valid
             throw new UnreachableException();
         }
+
+#if DEBUG
+        DebugValue = $"{GetType().Name}: {Value}";
+#endif
     }
 
     #region Implementation methods
-    
+
     private string Generate(DateTimeOffset time)
     {
         if (time < _minTime)

@@ -78,6 +78,25 @@ Value must have less than 12 characters and can contain only ASCII letters and d
 Salt must be less than 33 characters and should be set to random value to each type.
 Once set, it must not be changed.
 
+## Serialization
+
+`System.Text.Json` serializer options are available.
+
+First add package reference:
+
+```
+dotnet add package NextId.Serialization.Json
+```
+
+```csharp
+var options = new JsonSerializerOptions();
+options.AddIdentifierConverters();
+
+User user1 = User.NewRandomUser();
+string json = JsonSerializer.Serialize(user1, options);
+User user2 = JsonSerializer.Deserialize<User>(json, options)!;
+```
+
 ## Performance
 
 - ~866,551 generated ids per second per core
