@@ -7,7 +7,7 @@ namespace NextId.Serialization.Json;
 public class IdentifierJsonConverter<T> : JsonConverter<T>
     where T: Identifier<T>, IParsable<T>
 {
-    private static readonly MethodInfo _parse = typeof(T).GetMethod("Parse", BindingFlags.Public | BindingFlags.Static, new[] {typeof(string), typeof(IFormatProvider)})
+    private static readonly MethodInfo Parse = typeof(T).GetMethod("Parse", BindingFlags.Public | BindingFlags.Static, new[] {typeof(string), typeof(IFormatProvider)})
         ?? throw new InvalidOperationException("Failed to find parse method");
 
     public override T? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
@@ -17,7 +17,7 @@ public class IdentifierJsonConverter<T> : JsonConverter<T>
         
         if (value == null) return null;
         
-        return (T?)_parse.Invoke(null, new object?[] {value, null});
+        return (T?)Parse.Invoke(null, new object?[] {value, null});
     }
 
     public override void Write(Utf8JsonWriter writer, T value, JsonSerializerOptions options)

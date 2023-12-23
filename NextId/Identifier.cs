@@ -17,9 +17,11 @@ public abstract class Identifier<TSelf> : IEquatable<TSelf>
     where TSelf : Identifier<TSelf>, IParsable<TSelf>
 {
     // ReSharper disable StaticMemberInGenericType
-    private static readonly ThreadSafeRandom _rand = new();
-    private static readonly DateTimeOffset _minTime = new(new DateTime(1995, 1, 1));
+    private static readonly ThreadSafeRandom Rand = new();
+    private static readonly DateTimeOffset MinTime = new(new DateTime(1995, 1, 1));
     private const int ChecksumLength = 3;
+
+    private string? _numberValue;
 
 #if DEBUG
     internal string DebugValue { get; }
@@ -39,6 +41,11 @@ public abstract class Identifier<TSelf> : IEquatable<TSelf>
     /// Id value
     /// </summary>
     public string Value { get; }
+
+    /// <summary>
+    /// Id value represented as numbers
+    /// </summary>
+    public string NumberValue => _numberValue ??= GetNumberValue();
 
     /// <summary>
     /// Time component of the id
@@ -68,11 +75,13 @@ public abstract class Identifier<TSelf> : IEquatable<TSelf>
     }
 
     /// <summary>
-    /// Constructor for parsing existing values
+    /// Constructor for parsing existing values (Value or NumberValue or ToString())
     /// </summary>
     /// <param name="value">Id value to parse</param>
     protected Identifier(string value)
     {
+        value = ConvertNumberValueIfNeeded(value);
+
         if (string.IsNullOrWhiteSpace(value)) throw new ArgumentException("Value not set", nameof(value));
 
         Value = value;
@@ -100,7 +109,7 @@ public abstract class Identifier<TSelf> : IEquatable<TSelf>
 
     private string Generate(DateTimeOffset time)
     {
-        if (time < _minTime)
+        if (time < MinTime)
         {
             throw new ArgumentException("Time cannot be before year 1995");
         }
@@ -110,10 +119,10 @@ public abstract class Identifier<TSelf> : IEquatable<TSelf>
         ValidateSaltAndPrefix(Salt, Prefix);
 
         string timeValue = Base50.ToString(time.ToUnixTimeMilliseconds()) + Base50.ToString(time.Microsecond, 2);
-        string random = Base50.ToString(_rand.NextInt64(), 11);
+        string random = Base50.ToString(Rand.NextInt64(), 11);
 
         if (random.Length > 11) random = random.Substring(1, 11);
-        
+
         string value = $"{Prefix}-{timeValue}{random}";
 
         string checksum = Hash(value, Salt);
@@ -160,14 +169,14 @@ public abstract class Identifier<TSelf> : IEquatable<TSelf>
 
     private static bool IsTimeComponentValid(string value, [NotNullWhen(true)]out DateTimeOffset? timeComponent)
     {
-        string timePart = value.Split('-')[1].Substring(10);
+        string timePart = value.Split('-')[1].Substring(0, 10);
         string milliseconds = timePart.Substring(0, 8);
         string microseconds = timePart.Substring(8);
 
         DateTimeOffset dt = DateTimeOffset.FromUnixTimeMilliseconds(Base50.ToLong(milliseconds));
         timeComponent = dt.AddMicroseconds(Base50.ToLong(microseconds));
 
-        if (timeComponent < _minTime)
+        if (timeComponent < MinTime)
         {
             timeComponent = null;
             return false;
@@ -196,6 +205,27 @@ public abstract class Identifier<TSelf> : IEquatable<TSelf>
         {
             throw new InvalidOperationException("Prefix can contain only ASCII letters and digits.");
         }
+    }
+
+    private string GetNumberValue()
+    {
+        string value = Value.Split('-')[1];
+
+        return Prefix + "-" + Base50.GetNumberValue(value);
+    }
+
+    private static string ConvertNumberValueIfNeeded(string value)
+    {
+        string[] parts = value.Split('-');
+        string idValue = parts[1];
+
+        if (idValue.All(c => c is >= '0' and <= '9') && idValue.Length > 39)
+        {
+            idValue = Base50.GetStringValue(idValue);
+            return parts[0] + "-" + idValue;
+        }
+
+        return value;
     }
 
     #endregion Implementation methods
@@ -260,6 +290,8 @@ public abstract class Identifier<TSelf> : IEquatable<TSelf>
     /// </summary>
     /// <returns>String value that can be parsed</returns>
     public override string ToString() => Value;
+
+    public string ToNumberString() => NumberValue;
 
     #endregion Equals and overrides
 

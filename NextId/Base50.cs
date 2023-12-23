@@ -1,4 +1,6 @@
-﻿namespace NextId;
+﻿using System.Text;
+
+namespace NextId;
 
 internal static class Base50
 {
@@ -39,5 +41,35 @@ internal static class Base50
         }
 
         return result;
+    }
+
+    public static string GetNumberValue(string value)
+    {
+        char[] chars = new char[value.Length * 2];
+
+        for (int i = 0; i < value.Length; i++)
+        {
+            int index = Charset.IndexOf(value[i]);
+            string indexStr = index.ToString("00");
+            chars[i * 2] = indexStr[0];
+            chars[i * 2 + 1] = indexStr[1];
+        }
+
+        return new(chars);
+    }
+
+    public static string GetStringValue(string numberValue)
+    {
+        char[] chars = new char[numberValue.Length / 2];
+
+        for (int i = 0; i < numberValue.Length / 2; i++)
+        {
+            int firstIndex = i * 2;
+            char[] indexChars = { numberValue[firstIndex], numberValue[firstIndex + 1] };
+            int index = int.Parse(new string(indexChars));
+            chars[i] = Charset[index];
+        }
+
+        return new string(chars);
     }
 }

@@ -12,4 +12,12 @@ internal class ThreadSafeRandom
             return _random.NextInt64();
         }
     }
+
+    public int Next(int max)
+    {
+        lock (Sync)
+        {
+            return _random.Next(max);
+        }
+    }
 }

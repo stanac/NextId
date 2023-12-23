@@ -1,3 +1,5 @@
+using System.Text;
+
 namespace NextId.Tests;
 
 public class UserIdTests
@@ -5,10 +7,29 @@ public class UserIdTests
     [Fact]
     public void ToString_ReturnsId()
     {
-        UserId id = new UserId();
+        UserId id = UserId.NewId();
 
         id.ToString().Count(c => c == '-').Should().Be(1);
         id.Value.Should().StartWith("user-");
+    }
+
+    [Fact]
+    public void Parse_GivesExpectedValue()
+    {
+        int max = 1000;
+        ThreadSafeRandom rand = new();
+
+        for (int i = 0; i < max; i++)
+        {
+            Thread.Sleep(rand.Next(13));
+
+            UserId id1 = UserId.NewId();
+            string value = id1.ToString();
+
+            UserId id2 = UserId.Parse(value);
+
+            id2.Should().Be(id1);
+        }
     }
 
     [Fact]
@@ -18,7 +39,26 @@ public class UserIdTests
 
         UserId id = UserId.Parse(idValue);
         id.Value.Should().Be(idValue);
+        id.NumberValue.Length.Should().BeGreaterThan(idValue.Length);
         id.ToString().Should().Be(idValue);
+
+        var id2 = UserId.Parse(idValue);
+    }
+
+    [Fact]
+    public void ParseNumberValue_GivesExpectedValue()
+    {
+        ThreadSafeRandom rand = new();
+
+        for (int i = 0; i < 100; i++)
+        {
+            Thread.Sleep(rand.Next(13));
+
+            UserId id1 = UserId.NewId();
+            UserId id2 = UserId.Parse(id1.NumberValue);
+
+            id2.Should().Be(id1);
+        }
     }
 
     [Fact]

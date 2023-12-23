@@ -9,7 +9,7 @@ public class UserId : Identifier<UserId>, IParsable<UserId>
     protected override string Prefix => PrefixConst;
     protected override string Salt => SaltConst;
 
-    public UserId() { }
+    private UserId() { }
     
     // constructor with time component
     public UserId(DateTimeOffset dt) : base(dt) { }

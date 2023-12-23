@@ -1,12 +1,12 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFramework>net7.0</TargetFramework>
+		<TargetFrameworks>net7.0;net8.0</TargetFrameworks>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-		<Version>1.0.1</Version>
+		<Version>1.1.0</Version>
 		<IncludeSymbols>true</IncludeSymbols>
 		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
 
@@ -19,8 +19,8 @@
 		<Description>.NET libary for generating strongly-typed K-sortable identifiers with checksum</Description>
 		<Summary>.NET libary for generating strongly-typed K-sortable identifiers with checksum</Summary>
 		<Authors>stanac</Authors>
-		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<PackageTags>identifier;id;k-sortable;uuid</PackageTags>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
 
 	</PropertyGroup>
 

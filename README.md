@@ -24,6 +24,17 @@ unexpected activities by clients.
 
 ---
 
+`NumberValue` can be used to avoid displaying Id as random string which can 
+unintentionally contain words.
+
+Example number value:
+```
+user-020802261305083909400406090927063849243018230326
+```
+
+
+---
+
 ## How to use it
 
 Install [nuget package](https://www.nuget.org/packages/NextId)
@@ -35,14 +46,14 @@ dotnet add package NextId
 Inherit `NextId.Identifier` class:
 
 ```csharp
-public class UserId : Identifier<UserId>
+public class UserId : Identifier<UserId>, IParsable<UserId>
 {
     private const string PrefixConst = "user";
     private const string SaltConst = "99AAB45utg";
     protected override string Prefix => PrefixConst;
     protected override string Salt => SaltConst;
 
-    public UserId() { }
+    private UserId() { }
     
     // constructor with time component
     public UserId(DateTimeOffset dt) : base(dt) { }
@@ -52,22 +63,35 @@ public class UserId : Identifier<UserId>
 
     public static UserId NewId() => new();
 
-    public static UserId Parse(string value) => new(value);
+    public static UserId Parse(string s) => Parse(s, null);
+
+    public static UserId Parse(string s, IFormatProvider? provider) => new(s);
+
+    public static bool TryParse(string? s, IFormatProvider? provider, [NotNullWhen(true)]out UserId? result)
+    {
+        try
+        {
+            result = Parse(s!, provider);
+            return true;
+        }
+        catch
+        {
+            result = null;
+            return false;
+        }
+    }
 
     public static bool IsValid(string value) => IsValid(value, PrefixConst, SaltConst);
-    
-    // you can add TryParse if needed
 }
 ```
-
-You can call `new UserId()` or `UserId.NewId()` for new values, 
-`IsValid` for validation of existing values and `Parse` for parsing existing values.
 
 ```csharp
 UserId id1 = UserId.NewId();
 UserId id2 = UserId.Parse(id1.Value);
+UserId id3 = UserId.Parse(id1.NumberValue);
 
 (id1 == id2).Should().BeTrue();
+(id1 == id3).Should().BeTrue();
 ```
 
 You can get string value of identifier by calling `Value` property or `ToString()` method.
@@ -116,3 +140,12 @@ AMD Ryzen 7 2700X, 1 CPU, 16 logical and 8 physical cores
 | Parse_1000 | 2.704 ms | 0.0309 ms | 0.0258 ms |
 
 ```
+
+## Changes
+
+- 1.1.0
+    - Fixed bug when verifying validity of value
+    - Added support for `NumberValue`
+
+- 1.0.0 
+    - Initial version
