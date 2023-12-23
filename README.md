@@ -145,7 +145,7 @@ AMD Ryzen 7 2700X, 1 CPU, 16 logical and 8 physical cores
 
 - 1.1.1
     - Fix bug where `IsValid` method returns `false` for `NumberValue`
-    - 
+
 - 1.1.0
     - Fixed bug when verifying validity of value
     - Added support for `NumberValue`
