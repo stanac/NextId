@@ -132,6 +132,15 @@ public abstract class Identifier<TSelf> : IEquatable<TSelf>
 
     protected static bool IsValid(string value, string prefix, string salt)
     {
+        try
+        {
+            value = ConvertNumberValueIfNeeded(value);
+        }
+        catch
+        {
+            return false;
+        }
+
         if (string.IsNullOrWhiteSpace(value)) return false;
         if (value.Length > 40) return false;
 

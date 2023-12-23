@@ -14,6 +14,21 @@ public class UserIdTests
     }
 
     [Fact]
+    public void NumberValue_IsValid_ReturnsTrue()
+    {
+        int max = 1000;
+        ThreadSafeRandom rand = new();
+
+        for (int i = 0; i < max; i++)
+        {
+            Thread.Sleep(rand.Next(13));
+
+            UserId id = UserId.NewId();
+            UserId.IsValid(id.NumberValue).Should().BeTrue();
+        }
+    }
+
+    [Fact]
     public void Parse_GivesExpectedValue()
     {
         int max = 1000;
