@@ -1,5 +1,8 @@
-﻿using System.Diagnostics;
+﻿// File: \NextId\NextId\Identifier.cs
+
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -17,10 +20,15 @@ public abstract class Identifier<TSelf> : IEquatable<TSelf>
     where TSelf : Identifier<TSelf>, IParsable<TSelf>
 {
     // ReSharper disable StaticMemberInGenericType
+    private static bool _saltAndPrefixValidated;
     private static readonly ThreadSafeRandom Rand = new();
     private static readonly DateTimeOffset MinTime = new(new DateTime(1995, 1, 1));
     private const int ChecksumLength = 3;
-
+    private const int PayloadLength = 24; // Time(10) + Random(11) + Checksum(3)
+    private const int NumericPayloadLength = PayloadLength * 2; // Each Base50 char becomes 2 digits
+    private static string? _numberValueMask;
+    private static readonly object MaskSync = new();
+    
     private string? _numberValue;
 
 #if DEBUG
@@ -31,19 +39,19 @@ public abstract class Identifier<TSelf> : IEquatable<TSelf>
     /// Value to use as prefix for Id, only ASCII letters and digits allowed. Less than 12 characters in length.
     /// </summary>
     protected abstract string Prefix { get; }
-    
+
     /// <summary>
     /// Value to use as salt for checksum hashing. Less than 33 characters in length.
     /// </summary>
     protected abstract string Salt { get; }
 
     /// <summary>
-    /// Id value
+    /// Internal K-Sortable Id value.
     /// </summary>
     public string Value { get; }
 
     /// <summary>
-    /// Id value represented as numbers
+    /// Obfuscated Id value represented as numbers, suitable for public use (e.g., in URLs). This value is NOT sortable.
     /// </summary>
     public string NumberValue => _numberValue ??= GetNumberValue();
 
@@ -75,12 +83,23 @@ public abstract class Identifier<TSelf> : IEquatable<TSelf>
     }
 
     /// <summary>
-    /// Constructor for parsing existing values (Value or NumberValue or ToString())
+    /// Constructor for parsing existing values (from Value, NumberValue, or ToString()).
     /// </summary>
     /// <param name="value">Id value to parse</param>
     protected Identifier(string value)
     {
-        value = ConvertNumberValueIfNeeded(value);
+        // This constructor must handle both regular Base50 strings and masked numeric strings.
+        // It uses the instance-specific Salt to unmask if necessary.
+        string[] parts = value.Split('-');
+        if (parts.Length == 2 && parts[1].All(char.IsDigit) && parts[1].Length == NumericPayloadLength)
+        {
+            // ReSharper disable VirtualMemberCallInConstructor
+            string mask = GetMask(Salt);
+            // ReSharper restore VirtualMemberCallInConstructor
+            string unmaskedNumericPayload = ApplyXorMask(parts[1], mask);
+            string base50Payload = Base50.GetStringValue(unmaskedNumericPayload);
+            value = parts[0] + "-" + base50Payload;
+        }
 
         if (string.IsNullOrWhiteSpace(value)) throw new ArgumentException("Value not set", nameof(value));
 
@@ -114,9 +133,11 @@ public abstract class Identifier<TSelf> : IEquatable<TSelf>
             throw new ArgumentException("Time cannot be before year 1995");
         }
 
-        // {prefix}-{TimeComponent}{RandomComponent}{Checksum}
-
-        ValidateSaltAndPrefix(Salt, Prefix);
+        if (!_saltAndPrefixValidated)
+        {
+            ValidateSaltAndPrefix(Salt, Prefix);
+            _saltAndPrefixValidated = true;
+        }
 
         string timeValue = Base50.ToString(time.ToUnixTimeMilliseconds()) + Base50.ToString(time.Microsecond, 2);
         string random = Base50.ToString(Rand.NextInt64(), 11);
@@ -124,17 +145,16 @@ public abstract class Identifier<TSelf> : IEquatable<TSelf>
         if (random.Length > 11) random = random.Substring(1, 11);
 
         string value = $"{Prefix}-{timeValue}{random}";
-
         string checksum = Hash(value, Salt);
 
         return $"{value}{checksum}";
     }
 
-    protected static bool IsValid(string value, string prefix, string salt)
+    public static bool IsValid(string value, string prefix, string salt)
     {
         try
         {
-            value = ConvertNumberValueIfNeeded(value);
+            value = ConvertNumberValueIfNeeded(value, salt);
         }
         catch
         {
@@ -143,9 +163,7 @@ public abstract class Identifier<TSelf> : IEquatable<TSelf>
 
         if (string.IsNullOrWhiteSpace(value)) return false;
         if (value.Length > 40) return false;
-
         if (value.Count(c => c == '-') != 1) return false;
-
         if (!value.StartsWith(prefix + "-")) return false;
 
         string checksum = value.Substring(value.Length - ChecksumLength);
@@ -153,19 +171,14 @@ public abstract class Identifier<TSelf> : IEquatable<TSelf>
 
         string secondPart = value.Split('-')[1];
 
-        if (secondPart.Length != 24)
+        if (secondPart.Length != PayloadLength)
         {
             return false;
         }
 
         if (checksum != Hash(valueWithoutChecksum, salt)) return false;
-        
-        if (!IsTimeComponentValid(value, out _))
-        {
-            return false;
-        }
 
-        return true;
+        return IsTimeComponentValid(value, out _);
     }
 
     private static void EnsureValid(string value, string prefix, string salt)
@@ -176,7 +189,7 @@ public abstract class Identifier<TSelf> : IEquatable<TSelf>
         }
     }
 
-    private static bool IsTimeComponentValid(string value, [NotNullWhen(true)]out DateTimeOffset? timeComponent)
+    private static bool IsTimeComponentValid(string value, [NotNullWhen(true)] out DateTimeOffset? timeComponent)
     {
         string timePart = value.Split('-')[1].Substring(0, 10);
         string milliseconds = timePart.Substring(0, 8);
@@ -204,11 +217,15 @@ public abstract class Identifier<TSelf> : IEquatable<TSelf>
         return hashString.Substring(hashString.Length - ChecksumLength);
     }
 
-    // ReSharper disable once ParameterOnlyUsedForPreconditionCheck.Local
     private static void ValidateSaltAndPrefix(string salt, string prefix)
     {
         if (salt.Length > 32) throw new InvalidOperationException("Salt too large. Limit is 32 characters");
-        if (prefix.Length > 11) throw new InvalidOperationException("Prefix too large. Limit is 32 characters");
+        if (prefix.Length > 11) throw new InvalidOperationException("Prefix too large. Limit is 11 characters");
+        if (prefix.Length < 3) throw new InvalidOperationException("Prefix too short. Min length is 3");
+        if (string.IsNullOrWhiteSpace(prefix)) throw new InvalidOperationException("Prefix not set");
+        if (string.IsNullOrWhiteSpace(salt)) throw new InvalidOperationException("Salt not set");
+        if (salt.Any(char.IsWhiteSpace)) throw new InvalidOperationException("No whitespace chars in Salt allowed.");
+        if (prefix.Any(char.IsWhiteSpace)) throw new InvalidOperationException("No whitespace chars in Prefix allowed.");
 
         if (prefix.Any(c => !char.IsAsciiLetterOrDigit(c)))
         {
@@ -218,26 +235,81 @@ public abstract class Identifier<TSelf> : IEquatable<TSelf>
 
     private string GetNumberValue()
     {
-        string value = Value.Split('-')[1];
+        string payload = Value.Split('-')[1];
+        string plainNumericPayload = Base50.GetNumberValue(payload);
 
-        return Prefix + "-" + Base50.GetNumberValue(value);
+        string mask = GetMask(Salt);
+        string maskedNumericPayload = ApplyXorMask(plainNumericPayload, mask);
+
+        return Prefix + "-" + maskedNumericPayload;
     }
 
-    private static string ConvertNumberValueIfNeeded(string value)
+    private static string ConvertNumberValueIfNeeded(string value, string salt)
     {
         string[] parts = value.Split('-');
+        if (parts.Length != 2) return value;
+
         string idValue = parts[1];
 
-        if (idValue.All(c => c is >= '0' and <= '9') && idValue.Length > 39)
+        if (idValue.All(char.IsDigit) && idValue.Length == NumericPayloadLength)
         {
-            idValue = Base50.GetStringValue(idValue);
-            return parts[0] + "-" + idValue;
+            string mask = GetMask(salt);
+            string unmaskedIdValue = ApplyXorMask(idValue, mask);
+            string base50Value = Base50.GetStringValue(unmaskedIdValue);
+            return parts[0] + "-" + base50Value;
         }
 
         return value;
     }
 
-    #endregion Implementation methods
+    #endregion
+
+    #region Obfuscation Methods
+
+    /// <summary>
+    /// Generates a deterministic numeric mask from the given salt. The result is cached for performance.
+    /// </summary>
+    private static string GetMask(string salt)
+    {
+        if (_numberValueMask is not null) return _numberValueMask;
+
+        lock (MaskSync)
+        {
+            if (_numberValueMask is not null) return _numberValueMask;
+
+            byte[] saltBytes = Encoding.UTF8.GetBytes(salt);
+            byte[] hash = SHA256.HashData(saltBytes);
+
+            var maskBuilder = new StringBuilder(NumericPayloadLength);
+            int hashIndex = 0;
+
+            while (maskBuilder.Length < NumericPayloadLength)
+            {
+                maskBuilder.Append(hash[hashIndex] % 10);
+                hashIndex = (hashIndex + 1) % hash.Length;
+            }
+
+            _numberValueMask = maskBuilder.ToString();
+            return _numberValueMask;
+        }
+    }
+
+    /// <summary>
+    /// Applies a reversible XOR operation between two strings of digits.
+    /// </summary>
+    private static string ApplyXorMask(string input, string mask)
+    {
+        var result = new StringBuilder(input.Length);
+        for (int i = 0; i < input.Length; i++)
+        {
+            int digit = input[i] - '0';
+            int maskDigit = mask[i] - '0';
+            result.Append(digit ^ maskDigit);
+        }
+        return result.ToString();
+    }
+
+    #endregion
 
     #region Equals and overrides
 
@@ -252,7 +324,7 @@ public abstract class Identifier<TSelf> : IEquatable<TSelf>
         if (ReferenceEquals(this, other)) return true;
         return Value == other.Value;
     }
-    
+
     /// <summary>
     /// Are values equal
     /// </summary>
@@ -262,7 +334,7 @@ public abstract class Identifier<TSelf> : IEquatable<TSelf>
     {
         if (ReferenceEquals(null, obj)) return false;
         if (ReferenceEquals(this, obj)) return true;
-        if (obj.GetType() != this.GetType()) return false;
+        if (obj.GetType() != GetType()) return false;
         return Equals((TSelf)obj);
     }
 
@@ -295,13 +367,15 @@ public abstract class Identifier<TSelf> : IEquatable<TSelf>
     public static bool operator !=(Identifier<TSelf>? id1, Identifier<TSelf>? id2) => !(id1 == id2);
 
     /// <summary>
-    /// Converts identifier to string value
+    /// Converts identifier to its internal, K-Sortable string value.
     /// </summary>
     /// <returns>String value that can be parsed</returns>
     public override string ToString() => Value;
 
+    /// <summary>
+    /// Converts identifier to its obfuscated, numeric string value.
+    /// </summary>
     public string ToNumberString() => NumberValue;
 
-    #endregion Equals and overrides
-
+    #endregion
 }

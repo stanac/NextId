@@ -134,7 +134,7 @@ public class UserIdTests
         Action a = () => UserId.Parse(value);
         a.Should().Throw<FormatException>();
     }
-    
+
     [Fact]
     public void Parse_ChecksumWrong_ThrowsException()
     {
