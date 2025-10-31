@@ -6,13 +6,14 @@ namespace NextId.Performance;
 public class Benchmarks
 {
     private static readonly string _valueToParse = UserId.NewId().ToString();
+    private static string s = "";
 
     [Benchmark]
     public void NewId_1000()
     {
         for (int i = 0; i < 1000; i++)
         {
-            UserId.NewId();
+            s = UserId.NewId().Value;
         }
     }
 
