@@ -67,8 +67,8 @@ public class UserIdTests
         string idValue = "user-222v7HvDxSCh3aCFR6m982ZcjVT";
 
         UserId id = UserId.Parse(idValue);
-
         id.Value.Should().Be(idValue);
+
         id.NumberValue.Length.Should().BeGreaterThan(idValue.Length);
 
         id.ToString().Should().Be(idValue);
@@ -83,6 +83,7 @@ public class UserIdTests
 
             UserId id1 = UserId.NewId();
             UserId id2 = UserId.Parse(id1.NumberValue);
+            id2.NumberValue.Should().Be(id1.NumberValue);
 
             id2.Should().Be(id1);
         }

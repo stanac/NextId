@@ -101,6 +101,20 @@ public abstract class Identifier<TSelf> : IEquatable<TSelf>
 
         TimeComponent = timeComp;
         RandomComponent = randomComp;
+
+        SetValueFromParsing(value);
+    }
+
+    private void SetValueFromParsing(string value)
+    {
+        if (value.Length < Prefix.Length + 40)
+        {
+            _value = value;
+        }
+        else
+        {
+            _numberValue = value;
+        }
     }
 
     #region Implementation methods

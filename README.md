@@ -7,16 +7,15 @@ Strongly-typed, K-Sortable globally unique identifier with checksum for .NET 7+.
 
 Example value: 
 ```
-user-4B4XH7BnCp68CCY8mzVbNT5X
+user-222v7HzzwZTa3p6STTBZHqdqaYj
 ```
 
 - Left from `-` is type (max 11 characters)
 - Right from `-` is id value  
 
 id is componsed of:
-  - First 8 chars, Unix timestamp in milliseconds
-  - Next 2 chars, microseconds of the timestamp
-  - Next 11 chars, random value
+  - First 12 chars, Unix timestamp in microseconds
+  - Next 12 chars, random value
   - Final 3 chars, checksum value
 
 Checksum can be used to validate id before going to database to detect malicious or 
@@ -24,12 +23,12 @@ unexpected activities by clients.
 
 ---
 
-`NumberValue` can be used to avoid displaying Id as random string which can 
-unintentionally contain words.
+`NumberValue` can be used to avoid displaying Id as random string which can unintentionally contain words. 
+It's also has obfuscated time component by xoring with hash of Salt value and reversing resulting string.
 
 Example number value:
 ```
-user-020802261305083909400406090927063849243018230326
+user-4749359544740341583108563723412048386425073886
 ```
 
 
@@ -133,13 +132,13 @@ AMD Ryzen 7 2700X, 1 CPU, 16 logical and 8 physical cores
   [Host]     : .NET 7.0.7 (7.0.723.27404), X64 RyuJIT AVX2
   DefaultJob : .NET 7.0.7 (7.0.723.27404), X64 RyuJIT AVX2
 
-
 |     Method |     Mean |     Error |    StdDev |
 |----------- |---------:|----------:|----------:|
-| NewId_1000 | 1.154 ms | 0.0054 ms | 0.0050 ms |
-| Parse_1000 | 2.704 ms | 0.0309 ms | 0.0258 ms |
-
+| NewId_1000 | 1.312 ms | 0.0084 ms | 0.0079 ms |
+| Parse_1000 | 1.342 ms | 0.0039 ms | 0.0034 ms |
 ```
+
+It takes aroud 1.3 microseconds or 1330 nanoseconds to parse and generate new Id.
 
 ## Changes
 
