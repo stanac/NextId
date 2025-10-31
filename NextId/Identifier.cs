@@ -1,8 +1,5 @@
-﻿// File: \NextId\NextId\Identifier.cs
-
-using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
-using System.Linq;
+﻿using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -10,30 +7,26 @@ namespace NextId;
 
 /// <summary>
 /// Abstract class for strongly-typed, K-Sortable Id with Checksum in format: {prefix}-{TimeComponent}{RandomComponent}{Checksum}.
-/// TimeComponent is 10 characters, RandomComponent is 11 characters and Checksum is 2 characters.
 /// Prefix is user defined. TimeComponent is current time for new values (if not specified otherwise).
+/// TimeComponent is obfuscated with XOR with <see cref="Salt"/> hash for <see cref="NumberValue"/>, it's not obfuscated for <see cref="Value"/>/
 /// </summary>
-#if DEBUG
 [DebuggerDisplay("{DebugValue}")]
-#endif
 public abstract class Identifier<TSelf> : IEquatable<TSelf>
     where TSelf : Identifier<TSelf>, IParsable<TSelf>
 {
     // ReSharper disable StaticMemberInGenericType
     private static bool _saltAndPrefixValidated;
-    private static readonly ThreadSafeRandom Rand = new();
-    private static readonly DateTimeOffset MinTime = new(new DateTime(1995, 1, 1));
-    private const int ChecksumLength = 3;
-    private const int PayloadLength = 24; // Time(10) + Random(11) + Checksum(3)
-    private const int NumericPayloadLength = PayloadLength * 2; // Each Base50 char becomes 2 digits
-    private static string? _numberValueMask;
-    private static readonly object MaskSync = new();
+    private static readonly DateTimeOffset MinTime = new(new DateTime(1975, 1, 1));
+    private static byte[]? _saltHashBytes;
+    private static byte[]? _prefixHashBytes;
+    private static ulong? _timeComponentMask;
+    private int? _checksum;
     
     private string? _numberValue;
+    private string? _value;
+    private string? _debugValue;
 
-#if DEBUG
-    internal string DebugValue { get; }
-#endif
+    internal string DebugValue => _debugValue ??= $"{GetType().Name}: {Value}";
 
     /// <summary>
     /// Value to use as prefix for Id, only ASCII letters and digits allowed. Less than 12 characters in length.
@@ -46,9 +39,9 @@ public abstract class Identifier<TSelf> : IEquatable<TSelf>
     protected abstract string Salt { get; }
 
     /// <summary>
-    /// Internal K-Sortable Id value.
+    /// K-Sortable Id value.
     /// </summary>
-    public string Value { get; }
+    public string Value => _value ??= GetValue();
 
     /// <summary>
     /// Obfuscated Id value represented as numbers, suitable for public use (e.g., in URLs). This value is NOT sortable.
@@ -58,7 +51,16 @@ public abstract class Identifier<TSelf> : IEquatable<TSelf>
     /// <summary>
     /// Time component of the id
     /// </summary>
-    public DateTimeOffset TimeComponent { get; }
+    public ulong TimeComponent { get; }
+
+    /// <summary>
+    /// Random component of the id
+    /// </summary>
+    protected ulong RandomComponent { get; }
+
+    protected int Checksum => _checksum ??= ComputeChecksum();
+
+    private ulong TimeComponentMask => _timeComponentMask ??= ComputeTimeComponentMask();
 
     /// <summary>
     /// Constructor for generating new values
@@ -74,151 +76,194 @@ public abstract class Identifier<TSelf> : IEquatable<TSelf>
     /// <param name="time">Time component of the id</param>
     protected Identifier(DateTimeOffset time)
     {
-        Value = Generate(time);
-        TimeComponent = time;
+        if (time < MinTime)
+        {
+            throw new ArgumentException(nameof(time), $"Time cannot be less than {MinTime:u}");
+        }
 
-#if DEBUG
-        DebugValue = $"{GetType().Name}: {Value}";
-#endif
+        TimeComponent = (ulong)time.ToUnixTimeMilliseconds() * 1000L + (ulong)time.Microsecond;
+        RandomComponent = (ulong)ThreadSafeRandom.NextInt64();
+        ValidateSaltAndPrefix();
     }
 
     /// <summary>
-    /// Constructor for parsing existing values (from Value, NumberValue, or ToString()).
+    /// Constructor for parsing existing values (from Value or NumberValue).
     /// </summary>
     /// <param name="value">Id value to parse</param>
     protected Identifier(string value)
     {
-        // This constructor must handle both regular Base50 strings and masked numeric strings.
-        // It uses the instance-specific Salt to unmask if necessary.
-        string[] parts = value.Split('-');
-        if (parts.Length == 2 && parts[1].All(char.IsDigit) && parts[1].Length == NumericPayloadLength)
+        ValidateSaltAndPrefix();
+
+        if (!IsValid(value, out ulong timeComp, out ulong randomComp))
         {
-            // ReSharper disable VirtualMemberCallInConstructor
-            string mask = GetMask(Salt);
-            // ReSharper restore VirtualMemberCallInConstructor
-            string unmaskedNumericPayload = ApplyXorMask(parts[1], mask);
-            string base50Payload = Base50.GetStringValue(unmaskedNumericPayload);
-            value = parts[0] + "-" + base50Payload;
+            throw new FormatException($"Value `{value}` is not valid.");
         }
 
-        if (string.IsNullOrWhiteSpace(value)) throw new ArgumentException("Value not set", nameof(value));
-
-        Value = value;
-
-        // ReSharper disable VirtualMemberCallInConstructor
-        EnsureValid(Value, Prefix, Salt);
-        // ReSharper restore VirtualMemberCallInConstructor
-
-        if (IsTimeComponentValid(Value, out DateTimeOffset? td))
-        {
-            TimeComponent = td.Value;
-        }
-        else
-        {
-            // EnsureValid should throw if time component is not valid
-            throw new UnreachableException();
-        }
-
-#if DEBUG
-        DebugValue = $"{GetType().Name}: {Value}";
-#endif
+        TimeComponent = timeComp;
+        RandomComponent = randomComp;
     }
 
     #region Implementation methods
 
-    private string Generate(DateTimeOffset time)
+    private bool IsValid(string value, out ulong timeComponent, out ulong randomComponent) => IsValid(value, Prefix, Salt, out timeComponent, out randomComponent);
+
+    public static bool IsValid(string value, string prefix, string salt) => IsValid(value, prefix, salt, out _, out _);
+
+    private static bool IsValid(string value, string prefix, string salt, out ulong timeComponent, out ulong randomComponent)
     {
-        if (time < MinTime)
+        timeComponent = 0;
+        randomComponent = 0;
+
+        if (string.IsNullOrWhiteSpace(value) ||
+            value.Length < prefix.Length + 10 || value.Length > 100)
         {
-            throw new ArgumentException("Time cannot be before year 1995");
+            return false;
         }
 
-        if (!_saltAndPrefixValidated)
+        if (!value.StartsWith($"{prefix}-", StringComparison.Ordinal))
         {
-            ValidateSaltAndPrefix(Salt, Prefix);
-            _saltAndPrefixValidated = true;
+            return false;
         }
 
-        string timeValue = Base50.ToString(time.ToUnixTimeMilliseconds()) + Base50.ToString(time.Microsecond, 2);
-        string random = Base50.ToString(Rand.NextInt64(), 11);
+        if (value.Count(c => c == '-') != 1)
+        {
+            return false;
+        }
 
-        if (random.Length > 11) random = random.Substring(1, 11);
+        ReadOnlySpan<char> idPart = value.AsSpan(prefix.Length + 1);
 
-        string value = $"{Prefix}-{timeValue}{random}";
-        string checksum = Hash(value, Salt);
+        bool isNumbersFormat = true;
+        foreach (char c in idPart)
+        {
+            if (!char.IsAsciiDigit(c))
+            {
+                isNumbersFormat = false;
+                break;
+            }
+        }
 
-        return $"{value}{checksum}";
-    }
+        if (isNumbersFormat && idPart.Length < 40)
+        {
+            isNumbersFormat = false;
+        }
 
-    public static bool IsValid(string value, string prefix, string salt)
-    {
         try
         {
-            value = ConvertNumberValueIfNeeded(value, salt);
+            if (isNumbersFormat)
+            {
+                // --- NUMBER FORMAT (time is obfuscated with xor) ---
+                if (idPart.Length != 46)
+                {
+                    return false;
+                }
+
+                ReadOnlySpan<char> timeReversed = idPart.Slice(0, 20);
+                ReadOnlySpan<char> randomDigits = idPart.Slice(20, 20);
+                ReadOnlySpan<char> checksumDigits = idPart.Slice(40, 6);
+
+                Span<char> timeTemp = stackalloc char[20];
+                for (int i = 0; i < 20; i++)
+                {
+                    timeTemp[i] = timeReversed[19 - i];
+                }
+
+                if (!ulong.TryParse(timeTemp, out ulong maskedTime))
+                {
+                    return false;
+                }
+
+                ulong mask = BitConverter.ToUInt64(SHA256.HashData(Encoding.UTF8.GetBytes(salt)), 0);
+                timeComponent = maskedTime ^ mask;
+
+                randomComponent = InternalConverters.Decode(randomDigits);
+
+                if (!int.TryParse(checksumDigits, out int checksum))
+                {
+                    return false;
+                }
+
+                int computed = ComputeChecksum(prefix, salt, timeComponent, randomComponent);
+                return computed == checksum;
+            }
+            else
+            {
+                // --- BASE50 FORMAT ---
+                // Expected 12 + 12 + 3 = 27 chars
+                if (idPart.Length != 27)
+                {
+                    return false;
+                }
+
+                ReadOnlySpan<char> timeSpan = idPart.Slice(0, 12);
+                ReadOnlySpan<char> randomSpan = idPart.Slice(12, 12);
+                ReadOnlySpan<char> checksumSpan = idPart.Slice(24, 3);
+
+                timeComponent = InternalConverters.Decode(timeSpan);
+                randomComponent = InternalConverters.Decode(randomSpan);
+                ulong checksumLong = InternalConverters.Decode(checksumSpan);
+
+                int checksum;
+
+                if (checksumLong < InternalConverters.Max3Digits)
+                {
+                    checksum = (int)checksumLong;
+                }
+                else
+                {
+                    return false;
+                }
+
+                int computed = ComputeChecksum(prefix, salt, timeComponent, randomComponent);
+                return computed == checksum;
+            }
         }
         catch
         {
             return false;
         }
-
-        if (string.IsNullOrWhiteSpace(value)) return false;
-        if (value.Length > 40) return false;
-        if (value.Count(c => c == '-') != 1) return false;
-        if (!value.StartsWith(prefix + "-")) return false;
-
-        string checksum = value.Substring(value.Length - ChecksumLength);
-        string valueWithoutChecksum = value.Substring(0, value.Length - ChecksumLength);
-
-        string secondPart = value.Split('-')[1];
-
-        if (secondPart.Length != PayloadLength)
-        {
-            return false;
-        }
-
-        if (checksum != Hash(valueWithoutChecksum, salt)) return false;
-
-        return IsTimeComponentValid(value, out _);
     }
 
-    private static void EnsureValid(string value, string prefix, string salt)
+
+    private byte[] GetSaltHash() => _saltHashBytes ??= GetSaltHash(Salt);
+
+    private static byte[] GetSaltHash(string salt) => SHA256.HashData(Encoding.UTF8.GetBytes(salt));
+
+    private byte[] GetPrefixHash() => _prefixHashBytes ??= GetPrefixHash(Prefix);
+
+    private static byte[] GetPrefixHash(string prefix) => SHA256.HashData(Encoding.UTF8.GetBytes(prefix));
+
+    private int ComputeChecksum() => ComputeChecksum(Prefix, Salt, TimeComponent, RandomComponent);
+    
+    private static int ComputeChecksum(string prefix, string salt, ulong time, ulong random)
     {
-        if (!IsValid(value, prefix, salt))
-        {
-            throw new FormatException("Wrong format for identifier");
-        }
+        byte[] hashSalt = SHA256.HashData(Encoding.UTF8.GetBytes(salt));
+        byte[] prefixHash = SHA256.HashData(Encoding.UTF8.GetBytes(prefix));
+        byte[] timeBytes = BitConverter.GetBytes(time);
+        byte[] randomBytes = BitConverter.GetBytes(random);
+
+        byte[] toCompute = new byte[96];
+        hashSalt.CopyTo(toCompute, 0);
+        prefixHash.CopyTo(toCompute, 32);
+        timeBytes.CopyTo(toCompute, 64);
+        randomBytes.CopyTo(toCompute, 80);
+
+        byte[] hash = SHA256.HashData(toCompute);
+        return Math.Abs(BitConverter.ToInt32(hash)) % InternalConverters.Max3Digits;
     }
 
-    private static bool IsTimeComponentValid(string value, [NotNullWhen(true)] out DateTimeOffset? timeComponent)
-    {
-        string timePart = value.Split('-')[1].Substring(0, 10);
-        string milliseconds = timePart.Substring(0, 8);
-        string microseconds = timePart.Substring(8);
+    private ulong ComputeTimeComponentMask() => BitConverter.ToUInt64(GetSaltHash(), 0);
 
-        DateTimeOffset dt = DateTimeOffset.FromUnixTimeMilliseconds(Base50.ToLong(milliseconds));
-        timeComponent = dt.AddMicroseconds(Base50.ToLong(microseconds));
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void ValidateSaltAndPrefix() => ValidateSaltAndPrefix(Salt, Prefix);
 
-        if (timeComponent < MinTime)
-        {
-            timeComponent = null;
-            return false;
-        }
-
-        return true;
-    }
-
-    private static string Hash(string input, string salt)
-    {
-        byte[] inputBytes = Encoding.UTF8.GetBytes(input + salt);
-        byte[] hash = SHA256.HashData(inputBytes);
-        long hashValue = Math.Abs(BitConverter.ToInt64(hash));
-        string hashString = Base50.ToString(hashValue);
-
-        return hashString.Substring(hashString.Length - ChecksumLength);
-    }
-
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static void ValidateSaltAndPrefix(string salt, string prefix)
     {
+        if (_saltAndPrefixValidated)
+        {
+            return;
+        }
+
         if (salt.Length > 32) throw new InvalidOperationException("Salt too large. Limit is 32 characters");
         if (prefix.Length > 11) throw new InvalidOperationException("Prefix too large. Limit is 11 characters");
         if (prefix.Length < 3) throw new InvalidOperationException("Prefix too short. Min length is 3");
@@ -231,84 +276,20 @@ public abstract class Identifier<TSelf> : IEquatable<TSelf>
         {
             throw new InvalidOperationException("Prefix can contain only ASCII letters and digits.");
         }
+
+        _saltAndPrefixValidated = true;
+    }
+
+    private string GetValue()
+    {
+        return $"{Prefix}-{InternalConverters.EncodeToString(TimeComponent)}{InternalConverters.EncodeToString(RandomComponent)}{InternalConverters.EncodeChecksum(Checksum)}";
     }
 
     private string GetNumberValue()
     {
-        string payload = Value.Split('-')[1];
-        string plainNumericPayload = Base50.GetNumberValue(payload);
-
-        string mask = GetMask(Salt);
-        string maskedNumericPayload = ApplyXorMask(plainNumericPayload, mask);
-
-        return Prefix + "-" + maskedNumericPayload;
+        return $"{Prefix}-{(TimeComponent ^ TimeComponentMask).ToString().PadLeft(20, '0').ReverseString()}{InternalConverters.EncodeToNumberString(RandomComponent)}{Checksum.ToString().PadLeft(6, '0')}";
     }
-
-    private static string ConvertNumberValueIfNeeded(string value, string salt)
-    {
-        string[] parts = value.Split('-');
-        if (parts.Length != 2) return value;
-
-        string idValue = parts[1];
-
-        if (idValue.All(char.IsDigit) && idValue.Length == NumericPayloadLength)
-        {
-            string mask = GetMask(salt);
-            string unmaskedIdValue = ApplyXorMask(idValue, mask);
-            string base50Value = Base50.GetStringValue(unmaskedIdValue);
-            return parts[0] + "-" + base50Value;
-        }
-
-        return value;
-    }
-
-    #endregion
-
-    #region Obfuscation Methods
-
-    /// <summary>
-    /// Generates a deterministic numeric mask from the given salt. The result is cached for performance.
-    /// </summary>
-    private static string GetMask(string salt)
-    {
-        if (_numberValueMask is not null) return _numberValueMask;
-
-        lock (MaskSync)
-        {
-            if (_numberValueMask is not null) return _numberValueMask;
-
-            byte[] saltBytes = Encoding.UTF8.GetBytes(salt);
-            byte[] hash = SHA256.HashData(saltBytes);
-
-            var maskBuilder = new StringBuilder(NumericPayloadLength);
-            int hashIndex = 0;
-
-            while (maskBuilder.Length < NumericPayloadLength)
-            {
-                maskBuilder.Append(hash[hashIndex] % 10);
-                hashIndex = (hashIndex + 1) % hash.Length;
-            }
-
-            _numberValueMask = maskBuilder.ToString();
-            return _numberValueMask;
-        }
-    }
-
-    /// <summary>
-    /// Applies a reversible XOR operation between two strings of digits.
-    /// </summary>
-    private static string ApplyXorMask(string input, string mask)
-    {
-        var result = new StringBuilder(input.Length);
-        for (int i = 0; i < input.Length; i++)
-        {
-            int digit = input[i] - '0';
-            int maskDigit = mask[i] - '0';
-            result.Append(digit ^ maskDigit);
-        }
-        return result.ToString();
-    }
-
+    
     #endregion
 
     #region Equals and overrides

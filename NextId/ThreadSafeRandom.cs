@@ -1,23 +1,23 @@
 ﻿namespace NextId;
 
-internal class ThreadSafeRandom
+internal static class ThreadSafeRandom
 {
     private static readonly object Sync = new();
-    private readonly Random _random = new();
+    private static readonly Random Random = new();
 
-    public long NextInt64()
+    public static long NextInt64()
     {
         lock (Sync)
         {
-            return _random.NextInt64();
+            return Random.NextInt64();
         }
     }
 
-    public int Next(int max)
+    public static int Next(int max)
     {
         lock (Sync)
         {
-            return _random.Next(max);
+            return Random.Next(max);
         }
     }
 }

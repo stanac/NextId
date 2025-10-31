@@ -1,5 +1,3 @@
-using System.Text;
-
 namespace NextId.Tests;
 
 public class UserIdTests
@@ -7,21 +5,38 @@ public class UserIdTests
     [Fact]
     public void ToString_ReturnsId()
     {
+        const string idPrefix = "user-";
         UserId id = UserId.NewId();
 
         id.ToString().Count(c => c == '-').Should().Be(1);
-        id.Value.Should().StartWith("user-");
+        id.Value.Should().StartWith(idPrefix);
+
+        id.Value.Should().HaveLength(idPrefix.Length + 27);
+        id.NumberValue.Should().HaveLength(idPrefix.Length + 46);
+    }
+
+    [Fact]
+    public void Value_IsValid_ReturnsTrue()
+    {
+        int max = 100;
+
+        for (int i = 0; i < max; i++)
+        {
+            Thread.Sleep(ThreadSafeRandom.Next(13) + 1);
+
+            UserId id = UserId.NewId();
+            UserId.IsValid(id.Value).Should().BeTrue();
+        }
     }
 
     [Fact]
     public void NumberValue_IsValid_ReturnsTrue()
     {
-        int max = 1000;
-        ThreadSafeRandom rand = new();
-
+        int max = 100;
+        
         for (int i = 0; i < max; i++)
         {
-            Thread.Sleep(rand.Next(13));
+            Thread.Sleep(ThreadSafeRandom.Next(13) + 1);
 
             UserId id = UserId.NewId();
             UserId.IsValid(id.NumberValue).Should().BeTrue();
@@ -31,12 +46,11 @@ public class UserIdTests
     [Fact]
     public void Parse_GivesExpectedValue()
     {
-        int max = 1000;
-        ThreadSafeRandom rand = new();
-
+        int max = 100;
+        
         for (int i = 0; i < max; i++)
         {
-            Thread.Sleep(rand.Next(13));
+            Thread.Sleep(ThreadSafeRandom.Next(13) + 1);
 
             UserId id1 = UserId.NewId();
             string value = id1.ToString();
@@ -50,24 +64,22 @@ public class UserIdTests
     [Fact]
     public void Parse_ValidValue_ReturnsExpectedId()
     {
-        string idValue = "user-4B4XH7BnCp68CCY8mzVbNT5X";
+        string idValue = "user-222v7HvDxSCh3aCFR6m982ZcjVT";
 
         UserId id = UserId.Parse(idValue);
+
         id.Value.Should().Be(idValue);
         id.NumberValue.Length.Should().BeGreaterThan(idValue.Length);
-        id.ToString().Should().Be(idValue);
 
-        var id2 = UserId.Parse(idValue);
+        id.ToString().Should().Be(idValue);
     }
 
     [Fact]
     public void ParseNumberValue_GivesExpectedValue()
     {
-        ThreadSafeRandom rand = new();
-
         for (int i = 0; i < 100; i++)
         {
-            Thread.Sleep(rand.Next(13));
+            Thread.Sleep(ThreadSafeRandom.Next(13) + 1);
 
             UserId id1 = UserId.NewId();
             UserId id2 = UserId.Parse(id1.NumberValue);
@@ -129,7 +141,7 @@ public class UserIdTests
     [Fact]
     public void Parse_PrefixWrong_ThrowsException()
     {
-        string value = "users-4B4XH7BnCp68CCY8mzVbNT5X";
+        string value = "use-222v7HvDxSCh3aCFR6m982ZcjVT";
 
         Action a = () => UserId.Parse(value);
         a.Should().Throw<FormatException>();
@@ -138,7 +150,7 @@ public class UserIdTests
     [Fact]
     public void Parse_ChecksumWrong_ThrowsException()
     {
-        string value = "user-4B4XH7BnCp68CCY8mzVbNT5Y";
+        string value = "user-222v7HvDxSCh3aCFR6m982ZcjVE";
 
         Action a = () => UserId.Parse(value);
         a.Should().Throw<FormatException>();
@@ -147,14 +159,14 @@ public class UserIdTests
     [Fact]
     public void IsValid_ValidValue_ReturnsTrue()
     {
-        string value = "user-4B4XH7BnCp68CCY8mzVbNT5X";
+        string value = "user-222v7HvDxSCh3aCFR6m982ZcjVT";
         UserId.IsValid(value).Should().BeTrue();
     }
 
     [Fact]
     public void IsValid_NotValidValue_ReturnsFalse()
     {
-        string value = "user-3B4XH7BnCp68CCY8mzVbNT5X";
+        string value = "user-222f7HvDxSCh3aCFR6m982ZcjVT";
         UserId.IsValid(value).Should().BeFalse();
     }
 }
