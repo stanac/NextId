@@ -186,7 +186,7 @@ public abstract class Identifier<TSelf> : IEquatable<TSelf>
                     return false;
                 }
 
-                ulong mask = BitConverter.ToUInt64(SHA256.HashData(Encoding.UTF8.GetBytes(salt)), 0);
+                ulong mask = _timeComponentMask ??= BitConverter.ToUInt64(SHA256.HashData(Encoding.UTF8.GetBytes(salt)), 0);
                 timeComponent = maskedTime ^ mask;
 
                 randomComponent = InternalConverters.Decode(randomDigits);
@@ -303,7 +303,37 @@ public abstract class Identifier<TSelf> : IEquatable<TSelf>
     {
         return $"{Prefix}-{(TimeComponent ^ TimeComponentMask).ToString().PadLeft(20, '0').ReverseString()}{InternalConverters.EncodeToNumberString(RandomComponent)}{Checksum.ToString().PadLeft(6, '0')}";
     }
-    
+
+    //private string GetNumberValue()
+    //{
+    //    int totalLength = Prefix.Length + 1 + 20 + 20 + 6;
+
+    //    return string.Create(totalLength, this, (span, id) =>
+    //    {
+    //        int position = 0;
+
+    //        id.Prefix.AsSpan().CopyTo(span);
+    //        position += id.Prefix.Length;
+    //        span[position++] = '-';
+
+    //        ulong maskedTime = id.TimeComponent ^ id.TimeComponentMask;
+    //        maskedTime.TryFormat(span.Slice(position, 20), out _, "D20");
+
+    //        span.Slice(position, 20).Reverse();
+    //        position += 20;
+
+    //        byte[] data = BitConverter.GetBytes(id.RandomComponent);
+    //        uint int1 = BitConverter.ToUInt32(data, 0);
+    //        uint int2 = BitConverter.ToUInt32(data, 4);
+    //        int1.TryFormat(span.Slice(position, 10), out _, "D10");
+    //        position += 10;
+    //        int2.TryFormat(span.Slice(position, 10), out _, "D10");
+    //        position += 10;
+
+    //        id.Checksum.TryFormat(span.Slice(position, 6), out _, "D6");
+    //    });
+    //}
+
     #endregion
 
     #region Equals and overrides

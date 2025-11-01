@@ -19,6 +19,15 @@ public class Benchmarks
     }
 
     [Benchmark]
+    public void NewId_1000_NumberValue()
+    {
+        for (int i = 0; i < 1000; i++)
+        {
+            _s = UserId.NewId().NumberValue;
+        }
+    }
+
+    [Benchmark]
     public void Parse_1000()
     {
         for (int i = 0; i < 1000; i++)

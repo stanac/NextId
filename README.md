@@ -162,10 +162,11 @@ AMD Ryzen 7 2700X, 1 CPU, 16 logical and 8 physical cores
   DefaultJob : .NET 8.0.21 (8.0.2125.47513), X64 RyuJIT AVX2
 ```
 
-|     Method |     Mean |   Error |  StdDev |
-|----------- |---------:|--------:|--------:|
-| NewId_1000 | 585.1 us | 2.71 us | 2.54 us |
-| Parse_1000 | 660.3 us | 4.19 us | 3.92 us |
+|                 Method |     Mean |   Error |  StdDev |
+|----------------------- |---------:|--------:|--------:|
+|             NewId_1000 | 579.9 us | 2.90 us | 2.71 us |
+| NewId_1000_NumberValue | 662.3 us | 6.07 us | 5.68 us |
+|             Parse_1000 | 664.1 us | 5.52 us | 4.31 us |
 
 `NewId_1000` is method generating 1000 ids. `Parse_1000` is method parsing 1000 ids.
 
@@ -179,7 +180,7 @@ AMD Ryzen 7 2700X, 1 CPU, 16 logical and 8 physical cores
 ## Changes
 
 - 2.0.0
-    -  Rewrite using fixed lenght ids and source generator
+    -  Rewrite using fixed lenght ids and source generator with 2-3x better performance.
 - 1.1.1
     - Fix bug where `IsValid` method returns `false` for `NumberValue`
 
