@@ -164,9 +164,9 @@ AMD Ryzen 7 2700X, 1 CPU, 16 logical and 8 physical cores
 
 |                 Method |     Mean |   Error |  StdDev |
 |----------------------- |---------:|--------:|--------:|
-|             NewId_1000 | 585.9 us | 5.01 us | 4.69 us |
-| NewId_1000_NumberValue | 570.4 us | 4.98 us | 4.66 us |
-|             Parse_1000 | 651.9 us | 3.32 us | 3.10 us |
+|             NewId_1000 | 473.5 us | 4.14 us | 3.88 us |
+| NewId_1000_NumberValue | 578.4 us | 5.32 us | 4.71 us |
+|             Parse_1000 | 658.9 us | 3.71 us | 3.28 us |
 
 
 `NewId_1000` is method generating 1000 ids and getting `Value`.
@@ -181,11 +181,11 @@ AMD Ryzen 7 2700X, 1 CPU, 16 logical and 8 physical cores
 | NewId_1000_NumberValue | 2,840.0 us | 22.17 us | 20.73 us |
 |             Parse_1000 | 1,972.3 us | 18.70 us | 17.49 us |
 
-
 ## Changes
 
 - 2.0.0
-    -  Rewrite using fixed lenght ids and source generator with 2-3x better performance.
+    -  Rewrite using fixed lenght ids and source generator with as little allocations as possible resulting in 2-4x better performance.
+    -  v2 is not backward compatible
 - 1.1.1
     - Fix bug where `IsValid` method returns `false` for `NumberValue`
 

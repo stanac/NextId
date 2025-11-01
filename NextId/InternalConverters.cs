@@ -1,4 +1,6 @@
-﻿namespace NextId;
+﻿using System.Runtime.CompilerServices;
+
+namespace NextId;
 
 internal static class InternalConverters
 {
@@ -96,5 +98,37 @@ internal static class InternalConverters
             }
         }
         return value;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal static void Encode(Span<char> buffer, ulong value)
+    {
+        int i = buffer.Length;
+
+        do
+        {
+            ulong rem = value % Base;
+            value /= Base;
+            buffer[--i] = Alphabet[(int)rem];
+        } while (value > 0);
+
+        while (i > 0)
+            buffer[--i] = Alphabet[0];
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal static void EncodeChecksum(Span<char> buffer, int value)
+    {
+        int i = buffer.Length;
+
+        do
+        {
+            int rem = value % Base;
+            value /= Base;
+            buffer[--i] = Alphabet[rem];
+        } while (value > 0);
+
+        while (i > 0)
+            buffer[--i] = Alphabet[0];
     }
 }

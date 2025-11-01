@@ -296,7 +296,28 @@ public abstract class Identifier<TSelf> : IEquatable<TSelf>
 
     private string GetValue()
     {
-        return $"{Prefix}-{InternalConverters.EncodeToString(TimeComponent)}{InternalConverters.EncodeToString(RandomComponent)}{InternalConverters.EncodeChecksum(Checksum)}";
+        const int timeLength = 12;
+        const int randomLength = 12;
+        const int checksumLength = 3;
+
+        int totalLength = Prefix.Length + 1 + timeLength + randomLength + checksumLength;
+
+        return string.Create(totalLength, this, (span, id) =>
+        {
+            int position = 0;
+
+            id.Prefix.AsSpan().CopyTo(span);
+            position += id.Prefix.Length;
+            span[position++] = '-';
+
+            InternalConverters.Encode(span.Slice(position, timeLength), id.TimeComponent);
+            position += timeLength;
+
+            InternalConverters.Encode(span.Slice(position, randomLength), id.RandomComponent);
+            position += randomLength;
+
+            InternalConverters.EncodeChecksum(span.Slice(position, checksumLength), id.Checksum);
+        });
     }
 
     private string GetNumberValue()
