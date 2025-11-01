@@ -1,6 +1,5 @@
 ﻿using System.Diagnostics;
 using System.Runtime.CompilerServices;
-using System.Security.Cryptography;
 using System.Text;
 
 namespace NextId;
@@ -186,7 +185,7 @@ public abstract class Identifier<TSelf> : IEquatable<TSelf>
                     return false;
                 }
 
-                ulong mask = _timeComponentMask ??= BitConverter.ToUInt64(SHA256.HashData(Encoding.UTF8.GetBytes(salt)), 0);
+                ulong mask = _timeComponentMask ??= BitConverter.ToUInt64(HashHelper.HashDataTo16Bytes(Encoding.UTF8.GetBytes(salt)), 0);
                 timeComponent = maskedTime ^ mask;
 
                 randomComponent = InternalConverters.Decode(randomDigits);
@@ -240,31 +239,39 @@ public abstract class Identifier<TSelf> : IEquatable<TSelf>
 
     private byte[] GetSaltHash() => _saltHashBytes ??= GetSaltHash(Salt);
 
-    private static byte[] GetSaltHash(string salt) => SHA256.HashData(Encoding.UTF8.GetBytes(salt));
+    private static byte[] GetSaltHash(string salt) => HashHelper.HashDataTo16Bytes(Encoding.UTF8.GetBytes(salt));
 
-    private byte[] GetPrefixHash() => _prefixHashBytes ??= GetPrefixHash(Prefix);
-
-    private static byte[] GetPrefixHash(string prefix) => SHA256.HashData(Encoding.UTF8.GetBytes(prefix));
+    private static byte[] GetPrefixHash(string prefix) => HashHelper.HashDataTo16Bytes(Encoding.UTF8.GetBytes(prefix));
 
     private int ComputeChecksum() => ComputeChecksum(Prefix, Salt, TimeComponent, RandomComponent);
 
     private static int ComputeChecksum(string prefix, string salt, ulong time, ulong random)
     {
-        // stack
+        // 16 (salt hash) + 16 (prefix hash) + 8 (time) + 8 (random) = 48 bytes.
 
-        byte[] hashSalt = _saltHashBytes ??= SHA256.HashData(Encoding.UTF8.GetBytes(salt));
-        byte[] prefixHash = _prefixHashBytes ??= SHA256.HashData(Encoding.UTF8.GetBytes(prefix));
-        byte[] timeBytes = BitConverter.GetBytes(time);
-        byte[] randomBytes = BitConverter.GetBytes(random);
+        Span<byte> data = stackalloc byte[48];
 
-        byte[] toCompute = new byte[80];
-        hashSalt.CopyTo(toCompute, 0);
-        prefixHash.CopyTo(toCompute, 32);
-        timeBytes.CopyTo(toCompute, 64);
-        randomBytes.CopyTo(toCompute, 72);
+        byte[] hashSalt = _saltHashBytes ??= HashHelper.HashDataTo16Bytes(Encoding.UTF8.GetBytes(salt));
+        byte[] prefixHash = _prefixHashBytes ??= HashHelper.HashDataTo16Bytes(Encoding.UTF8.GetBytes(prefix));
 
-        byte[] hash = SHA256.HashData(toCompute);
-        return Math.Abs(BitConverter.ToInt32(hash)) % InternalConverters.Max3Digits;
+        hashSalt.CopyTo(data.Slice(0, 16));
+
+        prefixHash.CopyTo(data.Slice(16, 16));
+
+        BitConverter.TryWriteBytes(data.Slice(32, 8), time);
+        BitConverter.TryWriteBytes(data.Slice(40, 8), random);
+
+        byte[] finalHash = HashHelper.HashDataTo16Bytes(data);
+
+        Span<byte> hashSpan = finalHash.AsSpan();
+        int part1 = BitConverter.ToInt32(hashSpan.Slice(0, 4));
+        int part2 = BitConverter.ToInt32(hashSpan.Slice(4, 4));
+        int part3 = BitConverter.ToInt32(hashSpan.Slice(8, 4));
+        int part4 = BitConverter.ToInt32(hashSpan.Slice(12, 4));
+
+        int combinedHash = part1 ^ part2 ^ part3 ^ part4;
+
+        return Math.Abs(combinedHash) % InternalConverters.Max3Digits;
     }
 
     private ulong ComputeTimeComponentMask() => BitConverter.ToUInt64(GetSaltHash(), 0);

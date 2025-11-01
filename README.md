@@ -7,7 +7,7 @@ Strongly-typed, K-Sortable globally unique identifier with checksum for .NET 8+.
 
 Example value: 
 ```
-user-222v7HzzwZTa3p6STTBZHqdqaYj
+user-222v7NyttKhf2dvcpStpdNKD9TW
 ```
 
 - Left from `-` is type (max 11 characters)
@@ -29,7 +29,7 @@ Obfuscation is done to prevent easily guessing time component of the id.
 
 Example number value:
 ```
-user-4749359544740341583108563723412048386425073886
+user-9646185430515823890035197343360748348694018675
 ```
 
 
@@ -162,12 +162,11 @@ AMD Ryzen 7 2700X, 1 CPU, 16 logical and 8 physical cores
   DefaultJob : .NET 8.0.21 (8.0.2125.47513), X64 RyuJIT AVX2
 ```
 
-|                 Method |     Mean |   Error |  StdDev |
-|----------------------- |---------:|--------:|--------:|
-|             NewId_1000 | 471.3 us | 3.97 us | 3.52 us |
-| NewId_1000_NumberValue | 574.5 us | 3.38 us | 2.83 us |
-|             Parse_1000 | 512.1 us | 1.87 us | 1.66 us |
-
+|                 Method |     Mean |   Error |  StdDev |    Gen0 | Allocated |
+|----------------------- |---------:|--------:|--------:|--------:|----------:|
+|             NewId_1000 | 171.7 us | 0.85 us | 0.80 us | 45.8984 |  187.5 KB |
+| NewId_1000_NumberValue | 266.4 us | 1.62 us | 1.52 us | 62.9883 | 257.81 KB |
+|             Parse_1000 | 214.5 us | 0.58 us | 0.48 us | 40.0391 | 164.06 KB |
 
 `NewId_1000` is method generating 1000 ids and getting `Value`.
 `NewId_1000_NumberValue` is method generating 1000 ids and getting `NumberValue`.
@@ -184,8 +183,10 @@ AMD Ryzen 7 2700X, 1 CPU, 16 logical and 8 physical cores
 ## Changes
 
 - 2.0.0
-    -  Rewrite using fixed lenght ids and source generator with as little allocations as possible resulting in 2-4x better performance.
-    -  v2 is not backward compatible
+    -  Full rewrite, not backward compatible
+    -  Replaced SHA256 with xxHash128
+    -  New code allocate less memory
+    -  Added source generator for boilerplate code
 - 1.1.1
     - Fix bug where `IsValid` method returns `false` for `NumberValue`
 

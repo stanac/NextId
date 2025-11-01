@@ -3,6 +3,7 @@ using NextId.Tests;
 
 namespace NextId.Performance;
 
+[MemoryDiagnoser]
 public class Benchmarks
 {
     private static readonly string ValueToParse = UserId.NewId().ToString();

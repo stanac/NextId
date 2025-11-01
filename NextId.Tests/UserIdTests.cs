@@ -2,6 +2,9 @@ namespace NextId.Tests;
 
 public class UserIdTests
 {
+    private const string ValidValue = "user-222v7NyttKhf2dvcpStpdNKD9TW";
+    private const string ValidNumberValue = "user-9646185430515823890035197343360748348694018675";
+
     [Fact]
     public void ToString_ReturnsId()
     {
@@ -64,23 +67,19 @@ public class UserIdTests
     [Fact]
     public void Parse_ValidValue_ReturnsExpectedId()
     {
-        string idValue = "user-222v7NmdXTMm2zRJdGqknKKvHYN";
+        UserId id = UserId.Parse(ValidValue);
+        id.Value.Should().Be(ValidValue);
 
-        UserId id = UserId.Parse(idValue);
-        id.Value.Should().Be(idValue);
+        id.NumberValue.Length.Should().BeGreaterThan(ValidValue.Length);
 
-        id.NumberValue.Length.Should().BeGreaterThan(idValue.Length);
-
-        id.ToString().Should().Be(idValue);
+        id.ToString().Should().Be(ValidValue);
     }
 
     [Fact]
     public void Parse_ValidNumberValue_ReturnsExpectedId()
     {
-        string idValue = "user-5062152812410341583132584488951123813900033868";
-
-        UserId id = UserId.Parse(idValue);
-        id.NumberValue.Should().Be(idValue);
+        UserId id = UserId.Parse(ValidNumberValue);
+        id.NumberValue.Should().Be(ValidNumberValue);
 
         id.NumberValue.Length.Should().BeGreaterThan(id.Value.Length);
     }
@@ -153,7 +152,7 @@ public class UserIdTests
     [Fact]
     public void Parse_PrefixWrong_ThrowsException()
     {
-        string value = "use-222v7HvDxSCh3aCFR6m982ZcjVT";
+        string value = "use-222v7NyttKhf2dvcpStpdNKD9TW";
 
         Action a = () => UserId.Parse(value);
         a.Should().Throw<FormatException>();
@@ -162,7 +161,7 @@ public class UserIdTests
     [Fact]
     public void Parse_ChecksumWrong_ThrowsException()
     {
-        string value = "user-222v7HvDxSCh3aCFR6m982ZcjVE";
+        string value = "user-222v7NyttKhf2dvcpStpdNKD9Td";
 
         Action a = () => UserId.Parse(value);
         a.Should().Throw<FormatException>();
@@ -171,21 +170,19 @@ public class UserIdTests
     [Fact]
     public void IsValid_ValidValue_ReturnsTrue()
     {
-        string value = "user-222v7NmdXTMm2zRJdGqknKKvHYN";
-        UserId.IsValid(value).Should().BeTrue();
+        UserId.IsValid(ValidValue).Should().BeTrue();
     }
     
     [Fact]
     public void IsValid_ValidNumberValue_ReturnsTrue()
     {
-        string value = "user-5062152812410341583132584488951123813900033868";
-        UserId.IsValid(value).Should().BeTrue();
+        UserId.IsValid(ValidNumberValue).Should().BeTrue();
     }
 
     [Fact]
     public void IsValid_NotValidValue_ReturnsFalse()
     {
-        string value = "user-222f7HvDxSCh3aCFR6m982ZcjVT";
+        string value = "user-222v7NyttKhf2dvcpStpdNKD9Tg";
         UserId.IsValid(value).Should().BeFalse();
     }
 
@@ -229,11 +226,17 @@ public class UserIdTests
     }
 
     [Fact]
-    public async Task ThreadSafetyCheckTest()
+    public void ThreadSafetyCheckTest()
     {
-        HashSet<string> values = new();
+        const int count = 10000;
 
-        const int count = 1000;
+        Parallel.For(0, count, _ =>
+        {
+            string value = UserId.NewId().Value;
+            string numberValue = UserId.NewId().NumberValue;
+            UserId.IsValid(value).Should().BeTrue();
+            UserId.IsValid(numberValue).Should().BeTrue();
+        });
 
     }
 }
