@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace NextId.Gen
+﻿namespace NextId.Gen
 {
     internal static class SourceGenLog
     {
