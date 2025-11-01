@@ -9,6 +9,7 @@ internal static class InternalConverters
     private const int FixedAlphabetLength = 12;
     private const int FixedNumberAlphabetLength = 20;
     public const int Max3Digits = 116993;
+    private static readonly sbyte[] CharToValueMap = CreateCharToValueMap();
 
     public static string EncodeChecksum(int value)
     {
@@ -86,8 +87,8 @@ internal static class InternalConverters
         ulong value = 0;
         foreach (char c in text)
         {
-            int digit = Alphabet.IndexOf(c);
-            if (digit < 0)
+            sbyte digit = (c < CharToValueMap.Length) ? CharToValueMap[c] : (sbyte)-1;
+            if (digit == -1)
             {
                 throw new FormatException($"Invalid character '{c}' in input.");
             }
@@ -130,5 +131,17 @@ internal static class InternalConverters
 
         while (i > 0)
             buffer[--i] = Alphabet[0];
+    }
+
+    private static sbyte[] CreateCharToValueMap()
+    {
+        var map = new sbyte[123];
+        Array.Fill(map, (sbyte)-1);
+
+        for (int i = 0; i < Alphabet.Length; i++)
+        {
+            map[Alphabet[i]] = (sbyte)i;
+        }
+        return map;
     }
 }

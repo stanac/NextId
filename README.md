@@ -164,9 +164,9 @@ AMD Ryzen 7 2700X, 1 CPU, 16 logical and 8 physical cores
 
 |                 Method |     Mean |   Error |  StdDev |
 |----------------------- |---------:|--------:|--------:|
-|             NewId_1000 | 473.5 us | 4.14 us | 3.88 us |
-| NewId_1000_NumberValue | 578.4 us | 5.32 us | 4.71 us |
-|             Parse_1000 | 658.9 us | 3.71 us | 3.28 us |
+|             NewId_1000 | 471.3 us | 3.97 us | 3.52 us |
+| NewId_1000_NumberValue | 574.5 us | 3.38 us | 2.83 us |
+|             Parse_1000 | 512.1 us | 1.87 us | 1.66 us |
 
 
 `NewId_1000` is method generating 1000 ids and getting `Value`.

@@ -64,7 +64,7 @@ public class UserIdTests
     [Fact]
     public void Parse_ValidValue_ReturnsExpectedId()
     {
-        string idValue = "user-222v7HvDxSCh3aCFR6m982ZcjVT";
+        string idValue = "user-222v7NmdXTMm2zRJdGqknKKvHYN";
 
         UserId id = UserId.Parse(idValue);
         id.Value.Should().Be(idValue);
@@ -72,6 +72,17 @@ public class UserIdTests
         id.NumberValue.Length.Should().BeGreaterThan(idValue.Length);
 
         id.ToString().Should().Be(idValue);
+    }
+
+    [Fact]
+    public void Parse_ValidNumberValue_ReturnsExpectedId()
+    {
+        string idValue = "user-5062152812410341583132584488951123813900033868";
+
+        UserId id = UserId.Parse(idValue);
+        id.NumberValue.Should().Be(idValue);
+
+        id.NumberValue.Length.Should().BeGreaterThan(id.Value.Length);
     }
 
     [Fact]
@@ -122,8 +133,8 @@ public class UserIdTests
         UserId id1 = new UserId(now);
         UserId id2 = new UserId(now);
 
-        string time1 = id1.Value.Split('-')[1].Substring(0, 10);
-        string time2 = id2.Value.Split('-')[1].Substring(0, 10);
+        string time1 = id1.Value.Split('-')[1].Substring(0, 12);
+        string time2 = id2.Value.Split('-')[1].Substring(0, 12);
 
         time2.Should().Be(time1);
 
@@ -160,7 +171,14 @@ public class UserIdTests
     [Fact]
     public void IsValid_ValidValue_ReturnsTrue()
     {
-        string value = "user-222v7HvDxSCh3aCFR6m982ZcjVT";
+        string value = "user-222v7NmdXTMm2zRJdGqknKKvHYN";
+        UserId.IsValid(value).Should().BeTrue();
+    }
+    
+    [Fact]
+    public void IsValid_ValidNumberValue_ReturnsTrue()
+    {
+        string value = "user-5062152812410341583132584488951123813900033868";
         UserId.IsValid(value).Should().BeTrue();
     }
 
@@ -208,5 +226,14 @@ public class UserIdTests
 
         ids.Should().HaveCount(count);
         numberIds.Should().HaveCount(count);
+    }
+
+    [Fact]
+    public async Task ThreadSafetyCheckTest()
+    {
+        HashSet<string> values = new();
+
+        const int count = 1000;
+
     }
 }

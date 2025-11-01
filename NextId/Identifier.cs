@@ -247,19 +247,21 @@ public abstract class Identifier<TSelf> : IEquatable<TSelf>
     private static byte[] GetPrefixHash(string prefix) => SHA256.HashData(Encoding.UTF8.GetBytes(prefix));
 
     private int ComputeChecksum() => ComputeChecksum(Prefix, Salt, TimeComponent, RandomComponent);
-    
+
     private static int ComputeChecksum(string prefix, string salt, ulong time, ulong random)
     {
+        // stack
+
         byte[] hashSalt = _saltHashBytes ??= SHA256.HashData(Encoding.UTF8.GetBytes(salt));
         byte[] prefixHash = _prefixHashBytes ??= SHA256.HashData(Encoding.UTF8.GetBytes(prefix));
         byte[] timeBytes = BitConverter.GetBytes(time);
         byte[] randomBytes = BitConverter.GetBytes(random);
 
-        byte[] toCompute = new byte[96];
+        byte[] toCompute = new byte[80];
         hashSalt.CopyTo(toCompute, 0);
         prefixHash.CopyTo(toCompute, 32);
         timeBytes.CopyTo(toCompute, 64);
-        randomBytes.CopyTo(toCompute, 80);
+        randomBytes.CopyTo(toCompute, 72);
 
         byte[] hash = SHA256.HashData(toCompute);
         return Math.Abs(BitConverter.ToInt32(hash)) % InternalConverters.Max3Digits;
