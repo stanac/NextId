@@ -170,4 +170,43 @@ public class UserIdTests
         string value = "user-222f7HvDxSCh3aCFR6m982ZcjVT";
         UserId.IsValid(value).Should().BeFalse();
     }
+
+    [Fact]
+    public void StaticFieldTest()
+    {
+        for (int i = 0; i < 100; i++)
+        {
+            UserId userId1 = UserId.NewId();
+            CustomerId customerId1 = CustomerId.NewId();
+
+            UserId.IsValid(userId1.Value).Should().BeTrue();
+            UserId.IsValid(userId1.NumberValue).Should().BeTrue();
+            
+            UserId userId2 = UserId.Parse(userId1.Value);
+            userId2.Equals(userId1).Should().BeTrue();
+
+            UserId.IsValid(customerId1.Value).Should().BeFalse();
+            UserId.IsValid(customerId1.NumberValue).Should().BeFalse();
+
+            CustomerId customerId2 = CustomerId.Parse(customerId1.NumberValue);
+            (customerId2 == customerId1).Should().BeTrue();
+        }
+    }
+
+    [Fact]
+    public void IdsAreUnique()
+    {
+        const int count = 100;
+        HashSet<string> ids = new();
+        HashSet<string> numberIds = new();
+
+        for (int i = 0; i < count; i++)
+        {
+            ids.Add(UserId.NewId().Value);
+            numberIds.Add(UserId.NewId().NumberValue);
+        }
+
+        ids.Should().HaveCount(count);
+        numberIds.Should().HaveCount(count);
+    }
 }

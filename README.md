@@ -164,18 +164,23 @@ AMD Ryzen 7 2700X, 1 CPU, 16 logical and 8 physical cores
 
 |                 Method |     Mean |   Error |  StdDev |
 |----------------------- |---------:|--------:|--------:|
-|             NewId_1000 | 579.9 us | 2.90 us | 2.71 us |
-| NewId_1000_NumberValue | 662.3 us | 6.07 us | 5.68 us |
-|             Parse_1000 | 664.1 us | 5.52 us | 4.31 us |
+|             NewId_1000 | 585.9 us | 5.01 us | 4.69 us |
+| NewId_1000_NumberValue | 570.4 us | 4.98 us | 4.66 us |
+|             Parse_1000 | 651.9 us | 3.32 us | 3.10 us |
 
-`NewId_1000` is method generating 1000 ids. `Parse_1000` is method parsing 1000 ids.
+
+`NewId_1000` is method generating 1000 ids and getting `Value`.
+`NewId_1000_NumberValue` is method generating 1000 ids and getting `NumberValue`.
+`Parse_1000` is method parsing 1000 ids.
 
 **v1 Performance:**
 
-|     Method |       Mean |   Error |  StdDev |
-|----------- |-----------:|--------:|--------:|
-| NewId_1000 |   850.3 us | 3.59 us | 3.18 us |
-| Parse_1000 | 1,995.5 us | 8.10 us | 7.18 us |
+|                 Method |       Mean |    Error |   StdDev |
+|----------------------- |-----------:|---------:|---------:|
+|             NewId_1000 |   849.6 us |  4.00 us |  3.74 us |
+| NewId_1000_NumberValue | 2,840.0 us | 22.17 us | 20.73 us |
+|             Parse_1000 | 1,972.3 us | 18.70 us | 17.49 us |
+
 
 ## Changes
 
