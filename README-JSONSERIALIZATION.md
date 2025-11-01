@@ -16,7 +16,7 @@ public class SerializationTests
     public SerializationTests()
     {
         _options = new JsonSerializerOptions();
-        _options.AddIdentifierConverters();
+        _options.AddIdentifierConverters(serializeIdsAsNumberValues: false);
     }
 
     [Fact]
