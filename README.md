@@ -173,10 +173,10 @@ For v2 it takes aroud ~1.3 microseconds or 1300 nanoseconds to parse and generat
 
 **v1 Performance:**
 
-|     Method |     Mean |     Error |    StdDev |
-|----------- |---------:|----------:|----------:|
-| NewId_1000 | 1.154 ms | 0.0054 ms | 0.0050 ms |
-| Parse_1000 | 2.704 ms | 0.0309 ms | 0.0258 ms |
+|     Method |       Mean |   Error |  StdDev |
+|----------- |-----------:|--------:|--------:|
+| NewId_1000 |   850.3 us | 3.59 us | 3.18 us |
+| Parse_1000 | 1,995.5 us | 8.10 us | 7.18 us |
 
 ## Changes
 
