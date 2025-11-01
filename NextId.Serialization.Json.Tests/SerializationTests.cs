@@ -4,21 +4,19 @@ namespace NextId.Serialization.Json.Tests;
 
 public class SerializationTests
 {
-    private readonly JsonSerializerOptions _options;
-
-    public SerializationTests()
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void SerializeDeserialize_GivesEquivalentObject(bool serializeIdsAsNumberValues)
     {
-        _options = new JsonSerializerOptions();
-        _options.AddIdentifierConverters();
-    }
+        JsonSerializerOptions options = new();
+        options.AddIdentifierConverters(serializeIdsAsNumberValues);
 
-    [Fact]
-    public void Test1()
-    {
         User user1 = User.NewRandomUser();
-        string json = JsonSerializer.Serialize(user1, _options);
-        User user2 = JsonSerializer.Deserialize<User>(json, _options)!;
+        string json = JsonSerializer.Serialize(user1, options);
+        User user2 = JsonSerializer.Deserialize<User>(json, options)!;
 
         user1.Id.Should().Be(user2.Id);
+        user2.Should().BeEquivalentTo(user1);
     }
 }
