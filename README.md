@@ -162,14 +162,12 @@ AMD Ryzen 7 2700X, 1 CPU, 16 logical and 8 physical cores
   DefaultJob : .NET 8.0.21 (8.0.2125.47513), X64 RyuJIT AVX2
 ```
 
-|     Method |     Mean |     Error |    StdDev |
-|----------- |---------:|----------:|----------:|
-| NewId_1000 | 1.221 ms | 0.0114 ms | 0.0101 ms |
-| Parse_1000 | 1.255 ms | 0.0057 ms | 0.0053 ms |
+|     Method |     Mean |   Error |  StdDev |
+|----------- |---------:|--------:|--------:|
+| NewId_1000 | 585.1 us | 2.71 us | 2.54 us |
+| Parse_1000 | 660.3 us | 4.19 us | 3.92 us |
 
 `NewId_1000` is method generating 1000 ids. `Parse_1000` is method parsing 1000 ids.
-
-For v2 it takes aroud ~1.3 microseconds or 1300 nanoseconds to parse and generate new Id.
 
 **v1 Performance:**
 

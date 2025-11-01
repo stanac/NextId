@@ -250,8 +250,8 @@ public abstract class Identifier<TSelf> : IEquatable<TSelf>
     
     private static int ComputeChecksum(string prefix, string salt, ulong time, ulong random)
     {
-        byte[] hashSalt = SHA256.HashData(Encoding.UTF8.GetBytes(salt));
-        byte[] prefixHash = SHA256.HashData(Encoding.UTF8.GetBytes(prefix));
+        byte[] hashSalt = _saltHashBytes ??= SHA256.HashData(Encoding.UTF8.GetBytes(salt));
+        byte[] prefixHash = _prefixHashBytes ??= SHA256.HashData(Encoding.UTF8.GetBytes(prefix));
         byte[] timeBytes = BitConverter.GetBytes(time);
         byte[] randomBytes = BitConverter.GetBytes(random);
 
