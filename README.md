@@ -131,11 +131,11 @@ AMD Ryzen 7 2700X, 1 CPU, 16 logical and 8 physical cores
   DefaultJob : .NET 8.0.21 (8.0.2125.47513), X64 RyuJIT AVX2
 ```
 
-|                 Method |       Mean |    Error |   StdDev |
-|----------------------- |-----------:|---------:|---------:|
-|             NewId_1000 |   849.6 us |  4.00 us |  3.74 us |
-| NewId_1000_NumberValue | 2,840.0 us | 22.17 us | 20.73 us |
-|             Parse_1000 | 1,972.3 us | 18.70 us | 17.49 us |
+|                 Method |       Mean |    Error |   StdDev |     Gen0 | Allocated |
+|----------------------- |-----------:|---------:|---------:|---------:|----------:|
+|             NewId_1000 |   861.8 us |  5.00 us |  4.68 us | 416.9922 |   1.67 MB |
+| NewId_1000_NumberValue | 2,855.3 us |  5.07 us |  4.50 us | 722.6563 |   2.89 MB |
+|             Parse_1000 | 1,982.8 us | 20.11 us | 18.81 us | 640.6250 |   2.56 MB |
 
 `NewId_1000` is method generating 1000 ids and getting `Value`.
 `NewId_1000_NumberValue` is method generating 1000 ids and getting `NumberValue`.
