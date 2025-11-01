@@ -152,26 +152,26 @@ User user2 = JsonSerializer.Deserialize<User>(json, options)!;
 
 ## Performance
 
-v2 performance:
+**v2 performance:**
 
 ```
-BenchmarkDotNet=v0.13.5, OS=Windows 10 (10.0.19045.3086/22H2/2022Update)
+BenchmarkDotNet=v0.13.5, OS=Windows 10 (10.0.19045.6456/22H2/2022Update)
 AMD Ryzen 7 2700X, 1 CPU, 16 logical and 8 physical cores
-.NET SDK=7.0.304
-  [Host]     : .NET 7.0.7 (7.0.723.27404), X64 RyuJIT AVX2
-  DefaultJob : .NET 7.0.7 (7.0.723.27404), X64 RyuJIT AVX2
+.NET SDK=9.0.306
+  [Host]     : .NET 8.0.21 (8.0.2125.47513), X64 RyuJIT AVX2
+  DefaultJob : .NET 8.0.21 (8.0.2125.47513), X64 RyuJIT AVX2
 ```
 
 |     Method |     Mean |     Error |    StdDev |
 |----------- |---------:|----------:|----------:|
-| NewId_1000 | 1.312 ms | 0.0084 ms | 0.0079 ms |
-| Parse_1000 | 1.342 ms | 0.0039 ms | 0.0034 ms |
+| NewId_1000 | 1.221 ms | 0.0114 ms | 0.0101 ms |
+| Parse_1000 | 1.255 ms | 0.0057 ms | 0.0053 ms |
 
 `NewId_1000` is method generating 1000 ids. `Parse_1000` is method parsing 1000 ids.
 
-For v2 it takes aroud 1.3 microseconds or 1330 nanoseconds to parse and generate new Id.
+For v2 it takes aroud ~1.3 microseconds or 1300 nanoseconds to parse and generate new Id.
 
-v1 Performance:
+**v1 Performance:**
 
 |     Method |     Mean |     Error |    StdDev |
 |----------- |---------:|----------:|----------:|
