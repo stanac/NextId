@@ -186,7 +186,8 @@ v2 is 4-10x faster and allocates 10-12x less memory.
 
 - 2.1.0
     - Set prefix min lenght to 1
-    - Make is
+    - Make IsValid on abstract class `protected`
+    - Support .NET 8, 9 and 10
 - 2.0.0
     -  Full rewrite, not backward compatible
     -  Replaced SHA256 with xxHash128
