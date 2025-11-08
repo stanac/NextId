@@ -11,7 +11,7 @@ Add package reference
                   />
 ```
 
-Optionally set `Version` to be fixed, e.g. `"2.0.0"`
+Optionally set `Version` to be fixed, e.g. `"2.1.0"`
 
 It will inject `NextId.IdentifierAttribute`, use it on partial class:
 

@@ -58,7 +58,7 @@ Source generator is available since version 2.
                   />
 ```
 
-Optionally set `Version` to be fixed, e.g. `"2.0.0"`
+Optionally set `Version` to be fixed, e.g. `"2.1.0"`
 
 Create partial class for id:
 
@@ -184,6 +184,9 @@ v2 is 4-10x faster and allocates 10-12x less memory.
 
 ## Changes
 
+- 2.1.0
+    - Set prefix min lenght to 1
+    - Make is
 - 2.0.0
     -  Full rewrite, not backward compatible
     -  Replaced SHA256 with xxHash128

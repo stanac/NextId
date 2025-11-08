@@ -120,7 +120,7 @@ public abstract class Identifier<TSelf> : IEquatable<TSelf>
 
     private bool IsValid(string value, out ulong timeComponent, out ulong randomComponent) => IsValid(value, Prefix, Salt, out timeComponent, out randomComponent);
 
-    public static bool IsValid(string value, string prefix, string salt) => IsValid(value, prefix, salt, out _, out _);
+    protected static bool IsValid(string value, string prefix, string salt) => IsValid(value, prefix, salt, out _, out _);
 
     private static bool IsValid(string value, string prefix, string salt, out ulong timeComponent, out ulong randomComponent)
     {
@@ -289,7 +289,7 @@ public abstract class Identifier<TSelf> : IEquatable<TSelf>
 
         if (salt.Length > 32) throw new InvalidOperationException("Salt too large. Limit is 32 characters");
         if (prefix.Length > 11) throw new InvalidOperationException("Prefix too large. Limit is 11 characters");
-        if (prefix.Length < 3) throw new InvalidOperationException("Prefix too short. Min length is 3");
+        if (prefix.Length < 1) throw new InvalidOperationException("Prefix too short. Min length is 1");
         if (string.IsNullOrWhiteSpace(prefix)) throw new InvalidOperationException("Prefix not set");
         if (string.IsNullOrWhiteSpace(salt)) throw new InvalidOperationException("Salt not set");
         if (salt.Any(char.IsWhiteSpace)) throw new InvalidOperationException("No whitespace chars in Salt allowed.");
