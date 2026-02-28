@@ -7,11 +7,22 @@ namespace NextId.Serialization.Json;
 public class IdentifierJsonConverter<T> : JsonConverter<T>
     where T: Identifier<T>, IParsable<T>
 {
-    private readonly bool _serializeIdsAsNumberValues;
-
-    public IdentifierJsonConverter(bool serializeIdsAsNumberValues)
+    private readonly SerializationProperty _propertyToSerialize;
+    
+    public IdentifierJsonConverter()
+        : this(SerializationProperty.Value)
     {
-        _serializeIdsAsNumberValues = serializeIdsAsNumberValues;
+    }
+
+    [Obsolete("Use any other constructor")]
+    public IdentifierJsonConverter(bool serializeIdsAsNumberValues)
+        : this(serializeIdsAsNumberValues ? SerializationProperty.NumberValue : SerializationProperty.Value)
+    {
+    }
+
+    public IdentifierJsonConverter(SerializationProperty propertyToSerialize)
+    {
+        _propertyToSerialize = propertyToSerialize;
     }
 
     private static readonly MethodInfo Parse = typeof(T).GetMethod("Parse", BindingFlags.Public | BindingFlags.Static, new[] {typeof(string), typeof(IFormatProvider)})
@@ -30,9 +41,16 @@ public class IdentifierJsonConverter<T> : JsonConverter<T>
     public override void Write(Utf8JsonWriter writer, T value, JsonSerializerOptions options)
     {
         JsonConverter<string> c = (JsonConverter<string>)options.GetConverter(typeof(string));
-        string idValue = _serializeIdsAsNumberValues 
-            ? value.NumberValue 
-            : value.Value;
+        
+        string idValue = _propertyToSerialize switch
+        {
+            SerializationProperty.Value => value.Value,
+            SerializationProperty.NumberValue => value.NumberValue,
+            SerializationProperty.ValueNoPrefix => value.ValueNoPrefix,
+            SerializationProperty.NumberValueNoPrefix => value.NumberValueNoPrefix,
+            _ => throw new ArgumentOutOfRangeException()
+        };
+
         c.Write(writer, idValue, options);
     }
 }

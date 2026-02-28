@@ -20,12 +20,10 @@ public abstract class Identifier<TSelf> : IEquatable<TSelf>
     private static byte[]? _prefixHashBytes;
     private static ulong? _timeComponentMask;
     private int? _checksum;
-    
-    private string? _numberValue;
     private string? _value;
-    private string? _debugValue;
-
-    internal string DebugValue => _debugValue ??= $"{GetType().Name}: {Value}";
+    private string? _numberValue;
+    
+    internal string DebugValue => field ??= $"{GetType().Name}: {Value}";
 
     /// <summary>
     /// Value to use as prefix for Id, only ASCII letters and digits allowed. Less than 12 characters in length.
@@ -46,6 +44,16 @@ public abstract class Identifier<TSelf> : IEquatable<TSelf>
     /// Obfuscated Id value represented as numbers, suitable for public use (e.g., in URLs). This value is NOT sortable.
     /// </summary>
     public string NumberValue => _numberValue ??= GetNumberValue();
+
+    /// <summary>
+    /// K-Sortable Id value without prefix.
+    /// </summary>
+    public string ValueNoPrefix => field ??= GetValueNoPrefix();
+
+    /// <summary>
+    /// Obfuscated Id value without prefix represented as numbers, suitable for public use (e.g., in URLs). This value is NOT sortable.
+    /// </summary>
+    public string NumberValueNoPrefix => field ??= GetNumberValueNoPrefix();
 
     /// <summary>
     /// Time component of the id
@@ -93,6 +101,8 @@ public abstract class Identifier<TSelf> : IEquatable<TSelf>
     {
         ValidateSaltAndPrefix();
 
+        value = FormatPrefix(value);
+
         if (!IsValid(value, out ulong timeComp, out ulong randomComp))
         {
             throw new FormatException($"Value `{value}` is not valid.");
@@ -102,6 +112,18 @@ public abstract class Identifier<TSelf> : IEquatable<TSelf>
         RandomComponent = randomComp;
 
         SetValueFromParsing(value);
+    }
+
+    private string FormatPrefix(string value) => FormatPrefix(value, Prefix);
+
+    private static string FormatPrefix(string value, string prefix)
+    {
+        if (!value.Contains('-'))
+        {
+            value = $"{prefix}-{value}";
+        }
+
+        return value;
     }
 
     private void SetValueFromParsing(string value)
@@ -126,6 +148,8 @@ public abstract class Identifier<TSelf> : IEquatable<TSelf>
     {
         timeComponent = 0;
         randomComponent = 0;
+
+        value = FormatPrefix(value, prefix);
 
         if (string.IsNullOrWhiteSpace(value) ||
             value.Length < prefix.Length + 10 || value.Length > 100)
@@ -329,6 +353,8 @@ public abstract class Identifier<TSelf> : IEquatable<TSelf>
         });
     }
 
+    private string GetValueNoPrefix() => Value.Split('-').Last();
+
     private string GetNumberValue()
     {
         int totalLength = Prefix.Length + 1 + 20 + 20 + 6;
@@ -358,6 +384,8 @@ public abstract class Identifier<TSelf> : IEquatable<TSelf>
             id.Checksum.TryFormat(span.Slice(position, 6), out _, "D6");
         });
     }
+
+    private string GetNumberValueNoPrefix() => NumberValue.Split('-').Last();
 
     #endregion
 

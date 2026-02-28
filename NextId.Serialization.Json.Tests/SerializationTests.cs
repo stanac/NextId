@@ -5,12 +5,14 @@ namespace NextId.Serialization.Json.Tests;
 public class SerializationTests
 {
     [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
-    public void SerializeDeserialize_GivesEquivalentObject(bool serializeIdsAsNumberValues)
+    [InlineData(SerializationProperty.Value)]
+    [InlineData(SerializationProperty.ValueNoPrefix)]
+    [InlineData(SerializationProperty.NumberValue)]
+    [InlineData(SerializationProperty.NumberValueNoPrefix)]
+    public void SerializeDeserialize_GivesEquivalentObject(SerializationProperty serializationProperty)
     {
         JsonSerializerOptions options = new();
-        options.AddIdentifierConverters(serializeIdsAsNumberValues);
+        options.AddIdentifierConverters(serializationProperty);
 
         User user1 = User.NewRandomUser();
         string json = JsonSerializer.Serialize(user1, options);

@@ -1,0 +1,8 @@
+<Solution>
+  <Project Path="NextId.Gen/NextId.Gen.csproj" />
+  <Project Path="NextId.Performance/NextId.Performance.csproj" />
+  <Project Path="NextId.Serialization.Json.Tests/NextId.Serialization.Json.Tests.csproj" />
+  <Project Path="NextId.Serialization.Json/NextId.Serialization.Json.csproj" />
+  <Project Path="NextId.Tests/NextId.Tests.csproj" />
+  <Project Path="NextId/NextId.csproj" />
+</Solution>

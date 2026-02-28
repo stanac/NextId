@@ -5,10 +5,15 @@ namespace System.Text.Json;
 
 public static class Extensions
 {
+    [Obsolete("Use override with SerializationProperty.")]
     public static JsonSerializerOptions AddIdentifierConverters(this JsonSerializerOptions options, bool serializeIdsAsNumberValues)
-    {
-        options.Converters.Add(new IdentifierJsonConverterFactory(serializeIdsAsNumberValues));
+        => options.AddIdentifierConverters(serializeIdsAsNumberValues
+            ? SerializationProperty.NumberValue
+            : SerializationProperty.Value);
 
+    public static JsonSerializerOptions AddIdentifierConverters(this JsonSerializerOptions options, SerializationProperty serializationProperty)
+    {
+        options.Converters.Add(new IdentifierJsonConverterFactory(serializationProperty));
         return options;
     }
 }

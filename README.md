@@ -32,6 +32,15 @@ Example number value:
 user-9646185430515823890035197343360748348694018675
 ```
 
+Two new properties added in v 2.2.0:
+
+```
+ValueNoPrefix: 222v7NyttKhf2dvcpStpdNKD9TW
+NumberValueNoPrefix: 9646185430515823890035197343360748348694018675
+```
+
+Values of these properties are parsable, same as regular `Value` and `NumberValue`, and they can be passed to `IsValid` method.
+Prefix is now optional because we can use `Salt` and checksum to determine if value is valid.
 
 ---
 
@@ -58,7 +67,7 @@ Source generator is available since version 2.
                   />
 ```
 
-Optionally set `Version` to be fixed, e.g. `"2.1.0"`
+Optionally set `Version` to be fixed, e.g. `"2.2.0"`
 
 Create partial class for id:
 
@@ -128,7 +137,10 @@ Prefix will be set as identifier prefix (`user` in this case).
 Value must have less than 12 characters and can contain only ASCII letters and digits.
 
 Salt must be less than 33 characters and should be set to random value for each type.
-Once set, it must not be changed, otherwise parsing of existing values will fail.
+**Once set, it must not be changed**, otherwise parsing of existing values will fail.
+
+**Make sure  you are using different salt for different identifiers.** 
+I.e. never reause same salt value for different id types.
 
 ## Serialization
 
@@ -141,9 +153,9 @@ dotnet add package NextId.Serialization.Json
 ```
 
 ```csharp
-var options = new JsonSerializerOptions();
-// set serializeIdsAsNumberValues to true to serialize ids as `NumberValue`
-options.AddIdentifierConverters(serializeIdsAsNumberValues: false);
+// set `NumberValueNoPrefix` to be used for serialization
+JsonSerializerOptions options = new();
+options.AddIdentifierConverters(SerializationProperty.NumberValueNoPrefix);
 
 User user1 = User.NewRandomUser();
 string json = JsonSerializer.Serialize(user1, options);
@@ -184,6 +196,10 @@ v2 is 4-10x faster and allocates 10-12x less memory.
 
 ## Changes
 
+- 2.2.0
+    - Added `ValueNoPrefix` and `NumberValueNoPrefix` properties
+    - Added parsing support for new properties
+    - Added `IsValid` support for new properties
 - 2.1.0
     - Set prefix min lenght to 1
     - Make IsValid on abstract class `protected`

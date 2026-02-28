@@ -239,4 +239,31 @@ public class UserIdTests
         });
 
     }
+
+    [Fact]
+    public void NoPrefix_Parse_ReturnsId()
+    {
+        UserId id = UserId.NewId();
+
+        id.Value.Should().Contain(id.ValueNoPrefix);
+        id.NumberValue.Should().Contain(id.NumberValueNoPrefix);
+
+        id.ValueNoPrefix.Length.Should().BeLessThan(id.Value.Length);
+        id.NumberValueNoPrefix.Length.Should().BeLessThan(id.NumberValue.Length);
+
+        UserId id2 = UserId.Parse(id.ValueNoPrefix);
+        UserId id3 = UserId.Parse(id.NumberValueNoPrefix);
+
+        (id2 == id).Should().BeTrue();
+        (id3 == id).Should().BeTrue();
+    }
+
+    [Fact]
+    public void NoPrefix_IsValid_ReturnsTrue()
+    {
+        UserId id = UserId.NewId();
+
+        UserId.IsValid(id.ValueNoPrefix).Should().BeTrue();
+        UserId.IsValid(id.NumberValueNoPrefix).Should().BeTrue();
+    }
 }

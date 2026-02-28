@@ -5,11 +5,11 @@ namespace NextId.Serialization.Json;
 
 public class IdentifierJsonConverterFactory : JsonConverterFactory
 {
-    private readonly bool _serializeIdsAsNumberValues;
+    private readonly SerializationProperty _serializationProperty;
 
-    public IdentifierJsonConverterFactory(bool serializeIdsAsNumberValues)
+    public IdentifierJsonConverterFactory(SerializationProperty serializationProperty)
     {
-        _serializeIdsAsNumberValues = serializeIdsAsNumberValues;
+        _serializationProperty = serializationProperty;
     }
 
     public override bool CanConvert(Type typeToConvert)
@@ -22,8 +22,7 @@ public class IdentifierJsonConverterFactory : JsonConverterFactory
     {
         return (JsonConverter)Activator.CreateInstance
         (
-            typeof(IdentifierJsonConverter<>).MakeGenericType(typeToConvert),
-            [_serializeIdsAsNumberValues]
+            typeof(IdentifierJsonConverter<>).MakeGenericType(typeToConvert), _serializationProperty
         )!;
     }
 }
